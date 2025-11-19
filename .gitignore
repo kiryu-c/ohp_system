@@ -1,0 +1,13 @@
+# ログファイルを無視する
+logs/error.log
+
+# storage/invoices ディレクトリ以下の全てのファイルを無視する
+# ※PDFファイルは多くなりがちなので、ディレクトリごと無視するのが一般的です
+storage/invoices/
+
+# アドインファイル
+vender/
+
+# ドキュメント
+産業医システム_EXP.sql
+運用フロー.png
