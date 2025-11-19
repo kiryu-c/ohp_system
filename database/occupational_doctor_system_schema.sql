@@ -1,4 +1,4 @@
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `invoice_settings`
@@ -55,7 +55,7 @@ ALTER TABLE `invoice_settings`
   ADD CONSTRAINT `invoice_settings_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
 COMMIT;
 
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `users`
@@ -159,7 +159,7 @@ INSERT INTO `users` (
     1
 );
 
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `user_sessions`
@@ -203,7 +203,7 @@ ALTER TABLE `user_sessions`
   ADD CONSTRAINT `user_sessions_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `activity_logs`
 --
@@ -253,7 +253,7 @@ ALTER TABLE `activity_logs`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `companies`
 --
@@ -290,7 +290,7 @@ ALTER TABLE `companies`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `branches`
 --
@@ -340,7 +340,7 @@ ALTER TABLE `branches`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `user_branch_mappings`
 --
@@ -390,7 +390,7 @@ ALTER TABLE `user_branch_mappings`
   ADD CONSTRAINT `user_branch_mappings_ibfk_2` FOREIGN KEY (`branch_id`) REFERENCES `branches` (`id`) ON DELETE CASCADE;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `contracts`
 --
@@ -485,10 +485,9 @@ COMMIT;
 
 
 
-===================================================================
+--===================================================================
 
 
-===================================================================
 --
 -- テーブルの構造 `contract_weekly_schedules`
 --
@@ -536,10 +535,8 @@ ALTER TABLE `contract_weekly_schedules`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 
-
-===================================================================
 --
 -- テーブルの構造 `contract_non_visit_days`
 --
@@ -599,7 +596,7 @@ ALTER TABLE `contract_non_visit_days`
   ADD CONSTRAINT `contract_non_visit_days_ibfk_2` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`);
 COMMIT;
 
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `service_records`
@@ -683,7 +680,7 @@ ALTER TABLE `service_records`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `monthly_closing_records`
@@ -781,7 +778,7 @@ ALTER TABLE `monthly_closing_records`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `monthly_closing_details`
 --
@@ -843,7 +840,7 @@ ALTER TABLE `monthly_closing_details`
   ADD CONSTRAINT `monthly_closing_details_service_record_fk` FOREIGN KEY (`service_record_id`) REFERENCES `service_records` (`id`) ON DELETE SET NULL;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `service_description_templates`
 --
@@ -893,7 +890,7 @@ ALTER TABLE `service_description_templates`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --(未使用)
 --
 -- テーブルの構造 `template_usage_logs`
@@ -944,7 +941,7 @@ ALTER TABLE `template_usage_logs`
   ADD CONSTRAINT `template_usage_logs_ibfk_3` FOREIGN KEY (`service_record_id`) REFERENCES `service_records` (`id`) ON DELETE SET NULL;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `monthly_service_summary`
 --
@@ -1011,7 +1008,7 @@ ALTER TABLE `monthly_service_summary`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 
 --
 -- テーブルの構造 `closing_process_history`
@@ -1070,7 +1067,7 @@ COMMIT;
 
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `service_record_history`
 --
@@ -1123,7 +1120,7 @@ ALTER TABLE `service_record_history`
   ADD CONSTRAINT `fk_service_record_history_user` FOREIGN KEY (`action_by`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `travel_expenses`
 --
@@ -1208,7 +1205,7 @@ COMMIT;
 
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `travel_expense_templates`
 --
@@ -1267,7 +1264,7 @@ ALTER TABLE `travel_expense_templates`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `login_attempts`
 --
@@ -1307,7 +1304,7 @@ ALTER TABLE `login_attempts`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `password_history`
 --
@@ -1352,7 +1349,7 @@ ALTER TABLE `password_history`
   ADD CONSTRAINT `password_history_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `security_logs`
 --
@@ -1404,7 +1401,7 @@ ALTER TABLE `security_logs`
 COMMIT;
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `password_resets`
 --
@@ -1454,8 +1451,7 @@ ALTER TABLE `password_resets`
 COMMIT;
 
 
-===================================================================
--- --------------------------------------------------------
+--===================================================================
 
 --
 -- ビュー用の構造 `user_branch_details`
@@ -1464,7 +1460,7 @@ COMMIT;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_branch_details`  AS SELECT `u`.`id` AS `user_id`, `u`.`login_id` AS `login_id`, `u`.`name` AS `user_name`, `u`.`email` AS `email`, `c`.`id` AS `company_id`, `c`.`name` AS `company_name`, `b`.`id` AS `branch_id`, `b`.`name` AS `branch_name`, `b`.`address` AS `branch_address`, `b`.`phone` AS `branch_phone`, `b`.`email` AS `branch_email`, `ubm`.`created_at` AS `mapping_created_at`, `ubm`.`is_active` AS `mapping_active` FROM (((`users` `u` join `user_branch_mappings` `ubm` on(`u`.`id` = `ubm`.`user_id`)) join `branches` `b` on(`ubm`.`branch_id` = `b`.`id`)) join `companies` `c` on(`b`.`company_id` = `c`.`id`)) WHERE `u`.`is_active` = 1 AND `ubm`.`is_active` = 1 AND `b`.`is_active` = 1 AND `c`.`is_active` = 1 ;
 COMMIT;
 
-===================================================================
+--===================================================================
 --
 -- ビュー用の構造 `user_companies`
 --
@@ -1472,7 +1468,7 @@ COMMIT;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `user_companies`  AS SELECT DISTINCT `u`.`id` AS `user_id`, `u`.`login_id` AS `login_id`, `u`.`name` AS `user_name`, `u`.`email` AS `email`, `u`.`user_type` AS `user_type`, `c`.`id` AS `company_id`, `c`.`name` AS `company_name`, count(`ubm`.`branch_id`) AS `branch_count` FROM (((`users` `u` left join `user_branch_mappings` `ubm` on(`u`.`id` = `ubm`.`user_id` and `ubm`.`is_active` = 1)) left join `branches` `b` on(`ubm`.`branch_id` = `b`.`id` and `b`.`is_active` = 1)) left join `companies` `c` on(`b`.`company_id` = `c`.`id` and `c`.`is_active` = 1)) WHERE `u`.`is_active` = 1 GROUP BY `u`.`id`, `c`.`id` ;
 COMMIT;
 
-===================================================================
+--===================================================================
 BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -1518,7 +1514,7 @@ BEGIN
     COMMIT;
 END
 
-===================================================================
+--===================================================================
 BEGIN
     DECLARE access_count INT DEFAULT 0;
     
@@ -1534,7 +1530,7 @@ BEGIN
 END
 
 
-===================================================================
+--===================================================================
 BEGIN
     DECLARE v_contract_hours DECIMAL(5,2);
     DECLARE v_regular_visit_rate DECIMAL(8,0);
@@ -1612,7 +1608,7 @@ BEGIN
 END
 
 
-===================================================================
+--===================================================================
 --
 -- テーブルの構造 `email_logs`
 --
@@ -1675,4 +1671,4 @@ ALTER TABLE `email_logs`
   ADD CONSTRAINT `fk_email_logs_recipient_user` FOREIGN KEY (`recipient_user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL;
 COMMIT;
 
-===================================================================
+--===================================================================
