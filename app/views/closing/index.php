@@ -48,7 +48,7 @@ $filterSearch = $_GET['search'] ?? '';
                                 <select id="service-type-filter" name="service_type" class="form-select">
                                     <option value="">すべて</option>
                                     <?php foreach ($availableServiceTypes as $englishType => $japaneseType): ?>
-                                        <option value="<?= h($japaneseType) ?>" <?= $filterServiceType === $japaneseType ? 'selected' : '' ?>>
+                                        <option value="<?= h($englishType) ?>" <?= $filterServiceType === $englishType ? 'selected' : '' ?>>
                                             <?= h($japaneseType) ?>
                                         </option>
                                     <?php endforeach; ?>
@@ -59,10 +59,10 @@ $filterSearch = $_GET['search'] ?? '';
                                 <label for="status-filter" class="form-label">締め状況</label>
                                 <select id="status-filter" name="status" class="form-select">
                                     <option value="">すべて</option>
-                                    <option value="未処理" <?= $filterStatus === '未処理' ? 'selected' : '' ?>>未処理</option>
-                                    <option value="企業承認待ち" <?= $filterStatus === '企業承認待ち' ? 'selected' : '' ?>>企業承認待ち</option>
-                                    <option value="企業承認済み" <?= $filterStatus === '企業承認済み' ? 'selected' : '' ?>>企業承認済み</option>
-                                    <option value="差戻し" <?= $filterStatus === '差戻し' ? 'selected' : '' ?>>差戻し</option>
+                                    <option value="not_processed" <?= $filterStatus === 'not_processed' ? 'selected' : '' ?>>未処理</option>
+                                    <option value="pending_approval" <?= $filterStatus === 'pending_approval' ? 'selected' : '' ?>>企業承認待ち</option>
+                                    <option value="approved" <?= $filterStatus === 'approved' ? 'selected' : '' ?>>企業承認済み</option>
+                                    <option value="rejected" <?= $filterStatus === 'rejected' ? 'selected' : '' ?>>差戻し</option>
                                 </select>
                             </div>
                             
@@ -103,14 +103,30 @@ $filterSearch = $_GET['search'] ?? '';
                     <?php else: ?>
                         <!-- フィルター結果表示 -->
                         <?php if ($filterServiceType || $filterStatus || $filterSearch): ?>
+                            <?php
+                            // 役務種別の日本語変換
+                            $serviceTypeLabel = '';
+                            if ($filterServiceType && isset($availableServiceTypes[$filterServiceType])) {
+                                $serviceTypeLabel = $availableServiceTypes[$filterServiceType];
+                            }
+                            
+                            // 締め状況の日本語変換
+                            $statusLabels = [
+                                'not_processed' => '未処理',
+                                'pending_approval' => '企業承認待ち',
+                                'approved' => '企業承認済み',
+                                'rejected' => '差戻し'
+                            ];
+                            $statusLabel = $statusLabels[$filterStatus] ?? '';
+                            ?>
                             <div class="alert alert-success mb-3">
                                 <i class="fas fa-check-circle me-2"></i>
                                 <?= count($closingData) ?>件の契約が見つかりました
-                                <?php if ($filterServiceType): ?>
-                                    <span class="badge bg-primary ms-2">役務種別: <?= h($filterServiceType) ?></span>
+                                <?php if ($serviceTypeLabel): ?>
+                                    <span class="badge bg-primary ms-2">役務種別: <?= h($serviceTypeLabel) ?></span>
                                 <?php endif; ?>
-                                <?php if ($filterStatus): ?>
-                                    <span class="badge bg-info ms-2">締め状況: <?= h($filterStatus) ?></span>
+                                <?php if ($statusLabel): ?>
+                                    <span class="badge bg-info ms-2">締め状況: <?= h($statusLabel) ?></span>
                                 <?php endif; ?>
                                 <?php if ($filterSearch): ?>
                                     <span class="badge bg-warning text-dark ms-2">検索: <?= h($filterSearch) ?></span>
@@ -204,10 +220,6 @@ $filterSearch = $_GET['search'] ?? '';
                                                         <span class="badge bg-warning text-dark">
                                                             <i class="fas fa-clock me-1"></i>企業承認待ち
                                                         </span>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-info">
-                                                            <i class="fas fa-draft2digital me-1"></i>下書き
-                                                        </span>
                                                     <?php endif; ?>
                                                 <?php else: ?>
                                                     <span class="badge bg-secondary">未処理</span>
@@ -274,19 +286,13 @@ $filterSearch = $_GET['search'] ?? '';
                                                         </a>
                                                         
                                                         <?php if ($closingRecord): ?>
-                                                            <!-- 編集ボタン(下書きまたは差戻しの場合のみ) -->
-                                                            <?php if ($closingRecord['status'] === 'draft' || $closingRecord['company_rejected_at']): ?>
+                                                            <!-- 編集ボタン(差戻しの場合のみ) -->
+                                                            <?php if ($closingRecord['company_rejected_at']): ?>
                                                                 <a href="closing/simulation/<?= $contract['id'] ?>?period=<?= h($currentMonth) ?>" 
                                                                    class="btn btn-outline-warning" title="編集">
                                                                     <i class="fas fa-edit"></i>
                                                                 </a>
                                                             <?php endif; ?>
-                                                            
-                                                            <!-- CSV出力ボタン -->
-                                                            <a href="closing/exportCsv/<?= $closingRecord['id'] ?>" 
-                                                               class="btn btn-outline-success" title="CSV出力">
-                                                                <i class="fas fa-file-csv"></i>
-                                                            </a>
                                                             
                                                             <!-- PDF出力ボタン(確定済みの場合) -->
                                                             <?php if ($closingRecord['status'] === 'finalized' && $closingRecord['invoice_pdf_path']): ?>
@@ -296,12 +302,12 @@ $filterSearch = $_GET['search'] ?? '';
                                                                 </a>
                                                             <?php endif; ?>
                                                             
-                                                            <!-- 削除ボタン(下書きの場合のみ) -->
-                                                            <?php if ($closingRecord['status'] === 'draft'): ?>
-                                                                <button type="button" class="btn btn-outline-danger" 
-                                                                        onclick="deleteClosing(<?= $closingRecord['id'] ?>)"
-                                                                        title="削除">
-                                                                    <i class="fas fa-trash"></i>
+                                                            <!-- 締め取り消しボタン(産業医・管理者：確定済みで未承認の場合) -->
+                                                            <?php if ($closingRecord['status'] === 'finalized' && $closingRecord['company_approved'] != 1): ?>
+                                                                <button type="button" class="btn btn-outline-warning" 
+                                                                        onclick="reopenClosing(<?= $contract['id'] ?>, '<?= h($currentMonth) ?>')"
+                                                                        title="締め取消">
+                                                                    <i class="fas fa-undo"></i>
                                                                 </button>
                                                             <?php endif; ?>
                                                             
@@ -404,10 +410,6 @@ $filterSearch = $_GET['search'] ?? '';
                                                         <span class="badge bg-warning text-dark">
                                                             <i class="fas fa-clock me-1"></i>企業承認待ち
                                                         </span>
-                                                    <?php else: ?>
-                                                        <span class="badge bg-info">
-                                                            <i class="fas fa-draft2digital me-1"></i>下書き
-                                                        </span>
                                                     <?php endif; ?>
                                                 <?php else: ?>
                                                     <span class="badge bg-secondary">未処理</span>
@@ -476,10 +478,13 @@ $filterSearch = $_GET['search'] ?? '';
                                                             <i class="fas fa-edit me-1"></i>編集
                                                         </a>
                                                     <?php endif; ?>
-                                                    <a href="closing/exportCsv/<?= $closingRecord['id'] ?>" 
-                                                       class="btn btn-outline-success">
-                                                        <i class="fas fa-file-csv me-1"></i>CSV
-                                                    </a>
+                                                    
+                                                    <?php if ($closingRecord['status'] === 'finalized' && $closingRecord['company_approved'] != 1): ?>
+                                                        <button type="button" class="btn btn-outline-warning" 
+                                                                onclick="reopenClosing(<?= $contract['id'] ?>, '<?= h($currentMonth) ?>')">
+                                                            <i class="fas fa-undo me-1"></i>締め取消
+                                                        </button>
+                                                    <?php endif; ?>
                                                 <?php endif; ?>
                                             <?php endif; ?>
                                         </div>
@@ -563,35 +568,6 @@ $filterSearch = $_GET['search'] ?? '';
     </div>
 </div>
 
-<!-- 削除確認モーダル -->
-<div class="modal fade" id="deleteModal" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">
-                    <i class="fas fa-trash me-2"></i>締め処理の削除確認
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <p>この締め処理(下書き)を削除してもよろしいですか?</p>
-                <p class="text-danger small">この操作は取り消せません。</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    キャンセル
-                </button>
-                <form method="POST" id="deleteForm">
-                    <input type="hidden" name="csrf_token" value="<?= Session::get('csrf_token') ?>">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash me-2"></i>削除する
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- 承認取消モーダル -->
 <div class="modal fade" id="revokeModal" tabindex="-1">
     <div class="modal-dialog">
@@ -613,6 +589,39 @@ $filterSearch = $_GET['search'] ?? '';
                 <form method="POST" id="revokeForm">
                     <input type="hidden" name="csrf_token" value="<?= Session::get('csrf_token') ?>">
                     <input type="hidden" name="closing_period" id="revoke-period">
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-undo me-2"></i>取消する
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 締め取り消しモーダル -->
+<div class="modal fade" id="reopenModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-undo me-2"></i>締め処理の取消確認
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>この締め処理を取り消して、再編集できる状態に戻してもよろしいですか?</p>
+                <p class="text-warning small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    確定状態が解除され、未処理状態に戻ります。
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    キャンセル
+                </button>
+                <form method="POST" id="reopenForm">
+                    <input type="hidden" name="csrf_token" value="<?= Session::get('csrf_token') ?>">
+                    <input type="hidden" name="closing_period" id="reopen-period">
                     <button type="submit" class="btn btn-warning">
                         <i class="fas fa-undo me-2"></i>取消する
                     </button>
@@ -653,17 +662,18 @@ function rejectClosing(contractId, period) {
     new bootstrap.Modal(document.getElementById('rejectModal')).show();
 }
 
-// 削除処理
-function deleteClosing(closingRecordId) {
-    document.getElementById('deleteForm').action = 'closing/delete/' + closingRecordId;
-    new bootstrap.Modal(document.getElementById('deleteModal')).show();
-}
-
 // 承認取消処理
 function revokeApproval(contractId, period) {
     document.getElementById('revokeForm').action = 'closing/revokeCompanyApproval/' + contractId;
     document.getElementById('revoke-period').value = period;
     new bootstrap.Modal(document.getElementById('revokeModal')).show();
+}
+
+// 締め取り消し処理
+function reopenClosing(contractId, period) {
+    document.getElementById('reopenForm').action = 'closing/reopen/' + contractId;
+    document.getElementById('reopen-period').value = period;
+    new bootstrap.Modal(document.getElementById('reopenModal')).show();
 }
 
 // ページ読み込み時のフラッシュメッセージ表示
