@@ -1,0 +1,37 @@
+# htdocs/op_website/public/.htaccess
+
+RewriteEngine On
+
+# 静的ファイル（CSS、JS、画像など）は直接提供
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^assets/.*$ - [L]
+
+# 画像、CSS、JS、フォントファイルなど
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|pdf|txt)$ - [L]
+
+# その他の静的ファイル
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteCond %{REQUEST_FILENAME} !index\.php$
+RewriteRule ^(.*)$ $1 [L]
+
+# ディレクトリまたはファイルが存在しない場合のみindex.phpにリダイレクト
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# MIMEタイプの設定
+<IfModule mod_mime.c>
+    AddType text/css .css
+    AddType application/javascript .js
+    AddType image/svg+xml .svg
+</IfModule>
+
+# 開発中はキャッシュを無効化
+<IfModule mod_headers.c>
+    <FilesMatch "\.(css|js)$">
+        Header set Cache-Control "no-cache, no-store, must-revalidate"
+        Header set Pragma "no-cache"
+        Header set Expires 0
+    </FilesMatch>
+</IfModule>

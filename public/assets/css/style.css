@@ -1,0 +1,513 @@
+/* public/assets/css/style.css */
+/* モノトーン・グレー・薄い水色の落ち着いた配色 */
+
+:root {
+    /* メインカラーパレット */
+    --primary-blue: #7dd3fc;      /* 薄い水色 */
+    --primary-blue-dark: #0ea5e9; /* 濃い水色 */
+    --dark-gray: #374151;         /* ダークグレー */
+    --medium-gray: #6b7280;       /* ミディアムグレー */
+    --light-gray: #e5e7eb;        /* ライトグレー */
+    --very-light-gray: #f9fafb;   /* 非常に薄いグレー */
+    --white: #ffffff;             /* 白 */
+    --black: #111827;             /* 黒 */
+    
+    /* ステータスカラー */
+    --success-color: #10b981;     /* 緑（抑えめ） */
+    --warning-color: #f59e0b;     /* オレンジ（抑えめ） */
+    --danger-color: #ef4444;      /* 赤（抑えめ） */
+    --info-color: #06b6d4;        /* シアン（抑えめ） */
+}
+
+/* 基本設定 */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    background-color: var(--very-light-gray);
+    color: var(--dark-gray);
+    padding-top: 0;
+}
+
+.main-content {
+    min-height: calc(100vh - 120px);
+    padding-bottom: 2rem;
+}
+
+/* ナビゲーションバー */
+.navbar {
+    background-color: var(--white) !important;
+    border-bottom: 1px solid var(--light-gray);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.2rem;
+    color: var(--dark-gray) !important;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    border-radius: 0.375rem;
+    margin: 0 0.2rem;
+    transition: background-color 0.15s ease-in-out;
+    color: var(--medium-gray) !important;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: var(--very-light-gray);
+    color: var(--dark-gray) !important;
+}
+
+.navbar-nav .nav-link.active {
+    background-color: var(--primary-blue);
+    color: var(--dark-gray) !important;
+}
+
+/* カード */
+.card {
+    border: 1px solid var(--light-gray);
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.15s ease-in-out;
+    background-color: var(--white);
+}
+
+.card:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+    background-color: var(--very-light-gray);
+    border-bottom: 1px solid var(--light-gray);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-radius: 12px 12px 0 0 !important;
+    color: var(--dark-gray);
+}
+
+/* 統計カード - 統一された薄い水色 */
+.card.bg-primary,
+.card.bg-success,
+.card.bg-info,
+.card.bg-warning {
+    background-color: var(--primary-blue) !important;
+    border: 1px solid var(--light-gray) !important;
+}
+
+.card.bg-primary .card-body,
+.card.bg-success .card-body,
+.card.bg-info .card-body,
+.card.bg-warning .card-body {
+    color: var(--dark-gray) !important;
+}
+
+/* バッジ */
+.badge {
+    font-size: 0.75em;
+    padding: 0.5em 0.75em;
+    border-radius: 6px;
+}
+
+.badge.bg-warning, .badge-warning {
+    background-color: var(--warning-color) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-success, .badge-success {
+    background-color: var(--success-color) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-danger, .badge-danger {
+    background-color: var(--danger-color) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-secondary, .badge-secondary {
+    background-color: var(--medium-gray) !important;
+    color: var(--white) !important;
+}
+
+.badge.bg-info {
+    background-color: var(--primary-blue) !important;
+    color: var(--dark-gray) !important;
+}
+
+/* ボタン */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.15s ease-in-out;
+    border: 1px solid transparent;
+}
+
+.btn-primary {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: var(--dark-gray);
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-blue-dark);
+    border-color: var(--primary-blue-dark);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--white);
+}
+
+.btn-success:hover {
+    background-color: #059669;
+    border-color: #047857;
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-warning {
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
+    color: var(--white);
+}
+
+.btn-warning:hover {
+    background-color: #d97706;
+    border-color: #b45309;
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-danger {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--white);
+}
+
+.btn-danger:hover {
+    background-color: #dc2626;
+    border-color: #b91c1c;
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    background-color: var(--medium-gray);
+    border-color: var(--medium-gray);
+    color: var(--white);
+}
+
+.btn-secondary:hover {
+    background-color: var(--dark-gray);
+    border-color: var(--dark-gray);
+    color: var(--white);
+    transform: translateY(-1px);
+}
+
+.btn-outline-primary,
+.btn-outline-secondary,
+.btn-outline-success,
+.btn-outline-warning,
+.btn-outline-danger,
+.btn-outline-info {
+    color: var(--primary-blue-dark);
+    border-color: var(--primary-blue);
+    background-color: transparent;
+}
+
+.btn-outline-primary:hover,
+.btn-outline-secondary:hover,
+.btn-outline-success:hover,
+.btn-outline-warning:hover,
+.btn-outline-danger:hover,
+.btn-outline-info:hover {
+    background-color: var(--primary-blue);
+    border-color: var(--primary-blue);
+    color: var(--dark-gray);
+}
+
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.875rem;
+}
+
+/* テーブル */
+.table {
+    margin-bottom: 0;
+    color: var(--dark-gray);
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    background-color: var(--very-light-gray);
+    color: var(--dark-gray);
+    padding: 1rem 0.75rem;
+    border-bottom: 1px solid var(--light-gray);
+}
+
+.table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: var(--very-light-gray);
+}
+
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--light-gray);
+}
+
+.table-light {
+    background-color: var(--very-light-gray);
+}
+
+/* フォーム */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid var(--light-gray);
+    padding: 0.75rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    background-color: var(--white);
+    color: var(--dark-gray);
+}
+
+.form-control:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 0.25rem rgba(125, 211, 252, 0.25);
+    background-color: var(--white);
+    color: var(--dark-gray);
+}
+
+.form-select {
+    border-radius: 8px;
+    border: 1px solid var(--light-gray);
+    padding: 0.75rem;
+    background-color: var(--white);
+    color: var(--dark-gray);
+}
+
+.form-select:focus {
+    border-color: var(--primary-blue);
+    box-shadow: 0 0 0 0.25rem rgba(125, 211, 252, 0.25);
+}
+
+.form-label {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    color: var(--dark-gray);
+}
+
+/* アラート */
+.alert {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.alert-success {
+    background-color: #ecfdf5;
+    color: #065f46;
+    border-color: #a7f3d0;
+}
+
+.alert-danger {
+    background-color: #fef2f2;
+    color: #991b1b;
+    border-color: #fecaca;
+}
+
+.alert-warning {
+    background-color: #fffbeb;
+    color: #92400e;
+    border-color: #fed7aa;
+}
+
+.alert-info {
+    background-color: #f0f9ff;
+    color: #075985;
+    border-color: #bae6fd;
+}
+
+/* モーダル */
+.modal-content {
+    border-radius: 12px;
+    border: 1px solid var(--light-gray);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    background-color: var(--white);
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--light-gray);
+    padding: 1.5rem;
+    background-color: var(--very-light-gray);
+    color: var(--dark-gray);
+}
+
+.modal-body {
+    padding: 1.5rem;
+    color: var(--dark-gray);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--light-gray);
+    padding: 1.5rem;
+    background-color: var(--very-light-gray);
+}
+
+/* フッター */
+.footer {
+    background-color: var(--white);
+    border-top: 1px solid var(--light-gray);
+    margin-top: auto;
+    color: var(--medium-gray);
+}
+
+/* ドロップダウン */
+.dropdown-menu {
+    border-radius: 8px;
+    border: 1px solid var(--light-gray);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    padding: 0.5rem 0;
+    background-color: var(--white);
+}
+
+.dropdown-item {
+    padding: 0.5rem 1rem;
+    transition: background-color 0.15s ease-in-out;
+    color: var(--dark-gray);
+}
+
+.dropdown-item:hover {
+    background-color: var(--very-light-gray);
+    color: var(--dark-gray);
+}
+
+/* レスポンシブ対応 */
+@media (max-width: 768px) {
+    .container {
+        padding: 0 1rem;
+    }
+    
+    .card {
+        margin-bottom: 1rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .btn-group .btn {
+        width: 100%;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .navbar-nav {
+        margin-top: 1rem;
+    }
+    
+    .navbar-nav .nav-link {
+        padding: 0.75rem 1rem;
+        margin: 0.25rem 0;
+    }
+}
+
+@media (max-width: 576px) {
+    .d-flex.justify-content-between {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .d-flex.justify-content-between .btn-group {
+        align-self: stretch;
+    }
+    
+    .col-md-3 {
+        margin-bottom: 1rem;
+    }
+    
+    .modal-dialog {
+        margin: 1rem;
+    }
+}
+
+/* カスタム要素 */
+.login-card {
+    max-width: 400px;
+    margin: 0 auto;
+    border: 1px solid var(--light-gray);
+}
+
+.login-header {
+    text-align: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--primary-blue) 0%, var(--primary-blue-dark) 100%);
+    color: var(--dark-gray);
+    border-radius: 12px 12px 0 0;
+}
+
+.login-body {
+    padding: 2rem;
+    background-color: var(--white);
+}
+
+/* アニメーション */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.card {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* スクロールバー */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: var(--very-light-gray);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: var(--medium-gray);
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--dark-gray);
+}
+
+/* 印刷用スタイル */
+@media print {
+    .navbar,
+    .footer,
+    .btn,
+    .alert {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid var(--light-gray);
+    }
+    
+    .main-content {
+        padding: 0;
+    }
+}

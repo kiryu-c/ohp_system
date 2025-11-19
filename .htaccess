@@ -1,0 +1,16 @@
+RewriteEngine On
+
+# セキュリティ: 上位ディレクトリへのアクセス禁止
+RewriteCond %{THE_REQUEST} \s/+([^/\s]*/)*(config|app|core)/ [NC]
+RewriteRule ^ - [F]
+
+# MVCルーティング（将来用）
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+
+# ファイル直接アクセス禁止
+<FilesMatch "\.(env|ini|log)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
