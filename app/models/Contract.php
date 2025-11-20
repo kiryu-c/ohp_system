@@ -1041,8 +1041,34 @@ class Contract extends BaseModel {
      * 物理ファイルを削除
      */
     private function deletePhysicalFile($filePath) {
-        if (file_exists($filePath)) {
-            unlink($filePath);
+        // 相対パスを絶対パスに変換
+        // $filePath は /uploads/contracts/... の形式
+        if (strpos($filePath, '/uploads/') === 0) {
+            // public外のuploads/を参照
+            $absolutePath = __DIR__ . '/../..' . $filePath;
+        } elseif (strpos($filePath, ':') !== false || strpos($filePath, '\\') === 0) {
+            // 既に絶対パス（Windows形式またはUnix形式）
+            $absolutePath = $filePath;
+        } else {
+            // その他の形式
+            $absolutePath = $filePath;
+        }
+        
+        // パスを正規化
+        $absolutePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $absolutePath);
+        
+        // ファイルが存在すれば削除
+        if (file_exists($absolutePath) && is_file($absolutePath)) {
+            if (unlink($absolutePath)) {
+                error_log("Contract file deleted: {$absolutePath}");
+                return true;
+            } else {
+                error_log("Failed to delete contract file: {$absolutePath}");
+                return false;
+            }
+        } else {
+            error_log("Contract file not found for deletion: {$absolutePath}");
+            return false;
         }
     }
     
@@ -1472,11 +1498,18 @@ class Contract extends BaseModel {
                 ];
                 
                 // ファイル処理
+                // 注意: 反映日変更時（新バージョン作成）は物理ファイルを削除しない
+                // 既存バージョンと新バージョンで同じファイルを共有する可能性があるため
                 if ($removeFile) {
+                    // ファイル削除フラグがある場合は、新バージョンにはファイル情報を含めない
+                    // ただし、物理ファイルは削除しない（旧バージョンで使用中の可能性があるため）
                     $newData['contract_file_path'] = null;
                     $newData['contract_file_name'] = null;
                     $newData['contract_file_size'] = null;
                 } elseif ($fileInfo) {
+                    // 新しいファイルがアップロードされた場合
+                    // 新バージョンには新しいファイル情報を設定
+                    // 旧ファイルは削除しない（旧バージョンで使用中のため）
                     $newData['contract_file_path'] = $fileInfo['file_path'];
                     $newData['contract_file_name'] = $fileInfo['file_name'];
                     $newData['contract_file_size'] = $fileInfo['file_size'];

@@ -1835,19 +1835,32 @@ class ContractController extends BaseController {
         $filePath = $contract['contract_file_path'];
         $fileName = $contract['contract_file_name'];
         
-        if (!file_exists($filePath)) {
-            $this->setFlash('error', 'ファイルが存在しません。');
+        // パスの正規化: public外のuploads/contracts/を参照
+        if (strpos($filePath, ':') !== false || (strpos($filePath, '/') !== 0 && strpos($filePath, '\\') !== false)) {
+            // 絶対パスの場合（Windows形式含む）
+            $fileName_only = basename($filePath);
+            $absoluteFilePath = __DIR__ . '/../../uploads/contracts/' . $fileName_only;
+        } elseif (strpos($filePath, '/uploads/') === 0) {
+            // 相対パスの場合は絶対パスに変換（public外のuploads/）
+            $absoluteFilePath = __DIR__ . '/../..' . $filePath;
+        } else {
+            // 既に絶対パスの場合
+            $absoluteFilePath = $filePath;
+        }
+        
+        if (!file_exists($absoluteFilePath)) {
+            $this->setFlash('error', 'ファイルが存在しません。パス: ' . htmlspecialchars($absoluteFilePath));
             redirect('contracts');
         }
         
         // ファイルダウンロード
         header('Content-Type: application/octet-stream');
         header('Content-Disposition: attachment; filename="' . $fileName . '"');
-        header('Content-Length: ' . filesize($filePath));
+        header('Content-Length: ' . filesize($absoluteFilePath));
         header('Cache-Control: no-cache, must-revalidate');
         header('Pragma: no-cache');
         
-        readfile($filePath);
+        readfile($absoluteFilePath);
         exit;
     }
     
@@ -1992,7 +2005,8 @@ class ContractController extends BaseController {
     }
     
     private function saveUploadedFile($file, $companyId, $branchId) {
-        $uploadDir = __DIR__ . '/../../public/uploads/contracts/';
+        // public/の外、uploads/contracts/に保存（交通費と同じ構造）
+        $uploadDir = __DIR__ . '/../../uploads/contracts/';
         
         if (!is_dir($uploadDir)) {
             if (!mkdir($uploadDir, 0755, true)) {
@@ -2023,11 +2037,14 @@ EOD;
         
         $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
         $fileName = 'contract_' . $companyId . '_' . $branchId . '_' . date('YmdHis') . '_' . uniqid() . '.' . $extension;
-        $filePath = $uploadDir . $fileName;
+        $absoluteFilePath = $uploadDir . $fileName;
         
-        if (move_uploaded_file($file['tmp_name'], $filePath)) {
+        if (move_uploaded_file($file['tmp_name'], $absoluteFilePath)) {
+            // データベースには相対パスを保存
+            $relativeFilePath = '/uploads/contracts/' . $fileName;
+            
             return [
-                'file_path' => $filePath,
+                'file_path' => $relativeFilePath,
                 'file_name' => $file['name'],
                 'file_size' => $file['size']
             ];

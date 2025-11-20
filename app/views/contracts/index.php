@@ -538,8 +538,9 @@
                                 </td>
                                 <td class="text-center">
                                     <?php if (!empty($contract['contract_file_path'])): ?>
-                                        <a href="<?= base_url("contracts/{$contract['id']}/download-file") ?>" 
+                                        <a href="<?= htmlspecialchars($contract['contract_file_path'], ENT_QUOTES, 'UTF-8') ?>" 
                                         class="btn btn-sm btn-outline-primary <?= ($isContractExpired || $isOutsideContractPeriod) ? 'opacity-50' : '' ?>" 
+                                        target="_blank"
                                         title="<?= htmlspecialchars($contract['contract_file_name'], ENT_QUOTES, 'UTF-8') ?>">
                                             <i class="fas fa-file-pdf"></i>
                                         </a>
@@ -840,8 +841,9 @@
                                     <i class="fas fa-file-pdf text-muted me-1"></i>契約書
                                 </span>
                                 <span class="contract-info-value">
-                                    <a href="<?= base_url("contracts/{$contract['id']}/download-file") ?>" 
-                                    class="btn btn-sm btn-outline-primary">
+                                    <a href="<?= htmlspecialchars($contract['contract_file_path'], ENT_QUOTES, 'UTF-8') ?>" 
+                                    class="btn btn-sm btn-outline-primary"
+                                    target="_blank">
                                         <i class="fas fa-download me-1"></i>ダウンロード
                                     </a>
                                 </span>
@@ -1684,8 +1686,8 @@ function showContractDetails(contractId) {
                                 ${isOutsideContractPeriod ? '<br><small class="text-muted">期間外</small>' : ''}
                             </td></tr>
                             <tr><th>契約書</th><td>
-                                ${contract.contract_file_name ? 
-                                    `<a href="<?= base_url("contracts/") ?>${contract.id}/download-file" class="btn btn-sm btn-outline-primary ${(isContractExpired || isOutsideContractPeriod) ? 'opacity-75' : ''}"><i class="fas fa-download me-1"></i>ダウンロード</a>` : 
+                                ${contract.contract_file_name && contract.contract_file_path ? 
+                                    `<a href="${contract.contract_file_path}" target="_blank" class="btn btn-sm btn-outline-primary ${(isContractExpired || isOutsideContractPeriod) ? 'opacity-75' : ''}"><i class="fas fa-download me-1"></i>ダウンロード</a>` : 
                                     '<span class="text-muted">なし</span>'
                                 }
                             </td></tr>

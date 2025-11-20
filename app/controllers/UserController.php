@@ -343,7 +343,6 @@ class UserController extends BaseController {
         
         $data = [
             'login_id' => $loginId,
-            'password' => !empty($password) ? password_hash($password, PASSWORD_DEFAULT) : null,
             'name' => $name,
             'email' => $email,
             'user_type' => $userType,
@@ -351,6 +350,11 @@ class UserController extends BaseController {
             'contract_type' => $contractType,
             'is_active' => 1
         ];
+
+        // パスワードが入力されている場合のみ追加（ハッシュ化しない）
+        if (!empty($password)) {
+            $data['password'] = $password;
+        }
         
         // 産業医の場合は追加項目を含める
         if ($userType === 'doctor') {

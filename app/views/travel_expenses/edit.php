@@ -384,45 +384,50 @@ if (!function_exists('formatFileSize')) {
                                     <div class="mb-3">
                                         <label for="receipt_file" class="form-label">
                                             <i class="fas fa-receipt me-1"></i>レシート・領収書
+                                            <span id="receipt-required-mark" class="text-danger" style="display: none;">*</span>
                                         </label>
-                                        
-                                        <!-- 現在のファイル表示 -->
+
+                                        <!-- 既存ファイルがある場合の表示 -->
                                         <?php if (!empty($expense['receipt_file_path'])): ?>
-                                            <div class="current-file mb-2">
-                                                <div class="card border-info">
+                                            <div class="mb-2">
+                                                <div class="card">
                                                     <div class="card-body p-2">
-                                                        <div class="d-flex align-items-center justify-content-between">
+                                                        <div class="d-flex justify-content-between align-items-center">
                                                             <div>
                                                                 <i class="<?= getFileIcon($expense['receipt_file_name']) ?> me-2"></i>
-                                                                <strong>現在のファイル：</strong>
-                                                                <?= htmlspecialchars($expense['receipt_file_name'], ENT_QUOTES, 'UTF-8') ?>
-                                                                <small class="text-muted d-block">
-                                                                    (<?= formatFileSize($expense['receipt_file_size']) ?>)
-                                                                </small>
+                                                                <span class="small">
+                                                                    <?= htmlspecialchars($expense['receipt_file_name'], ENT_QUOTES, 'UTF-8') ?>
+                                                                    <?php if (!empty($expense['receipt_file_size'])): ?>
+                                                                        (<?= formatFileSize($expense['receipt_file_size']) ?>)
+                                                                    <?php endif; ?>
+                                                                </span>
                                                             </div>
                                                             <div>
                                                                 <a href="<?= base_url($expense['receipt_file_path']) ?>" 
-                                                                   target="_blank" class="btn btn-sm btn-outline-info">
-                                                                    <i class="fas fa-eye me-1"></i>表示
+                                                                target="_blank" class="btn btn-sm btn-info me-1">
+                                                                    <i class="fas fa-eye"></i> 表示
                                                                 </a>
+                                                                <button type="button" class="btn btn-sm btn-danger" id="delete-receipt-btn">
+                                                                    <i class="fas fa-trash"></i> 削除
+                                                                </button>
+                                                                <input type="hidden" name="delete_receipt" id="delete_receipt" value="0">
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         <?php endif; ?>
-                                        
+
                                         <input type="file" class="form-control" id="receipt_file" name="receipt_file" 
-                                               accept=".jpg,.jpeg,.png,.gif,.pdf">
-                                        <div class="form-text">
+                                            accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                        <div class="form-text" id="receipt-help-text">
                                             <?php if (!empty($expense['receipt_file_path'])): ?>
-                                                新しいファイルを選択すると、現在のファイルと置き換わります<br>
+                                                新しいファイルをアップロードすると、既存のファイルは上書きされます<br>
                                             <?php endif; ?>
                                             <small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
                             
                             <div class="mb-3">
                                 <label for="memo" class="form-label">
@@ -433,6 +438,29 @@ if (!function_exists('formatFileSize')) {
                                           placeholder="特記事項があれば入力してください（例：複数路線利用、深夜料金込み等）"><?= htmlspecialchars($expense['memo'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
                                 <div class="form-text" id="memo-help-text">交通費に関する補足情報があれば記載してください<br>
                                     <span class="text-danger">※個人情報や個人を特定できる情報は入力しないでください。</span></div>
+                            </div>
+
+                            <!-- 企業にお伝え済みチェックボックス（タクシー不可時のみ表示） -->
+                            <div class="mb-3" id="company-notified-group" style="display: none;">
+                                <div class="card border-warning">
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="company_notified" name="company_notified" value="1"
+                                                <?= !empty($expense['company_notified']) ? 'checked' : '' ?>>
+                                            <label class="form-check-label" for="company_notified">
+                                                <strong class="text-danger">
+                                                    <i class="fas fa-exclamation-circle me-1"></i>
+                                                    企業にお伝え済み <span class="text-danger">*</span>
+                                                </strong>
+                                            </label>
+                                        </div>
+                                        <div class="form-text mt-2">
+                                            <i class="fas fa-info-circle me-1 text-primary"></i>
+                                            タクシー利用について、事前に企業担当者へ連絡・承諾を得た場合にチェックしてください。<br>
+                                            <small class="text-danger">※タクシー利用不可の契約でタクシーを利用する場合、このチェックが必須です。</small>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <!-- テンプレート保存オプション -->
@@ -801,6 +829,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // タクシー利用可否の設定
     const taxiAllowed = <?= json_encode(isset($expense['taxi_allowed']) ? (bool)$expense['taxi_allowed'] : false) ?>;
     
+    // ★ 追加：既存の領収書の有無
+    const hasExistingReceipt = <?= json_encode(!empty($expense['receipt_file_path'])) ?>;
+    
     // 初期表示時に交通手段に応じた表示/非表示を設定
     const initialTransportType = transportTypeSelect.value;
     const hideRouteTypes = ['gasoline', 'parking', 'rental_car'];
@@ -824,12 +855,55 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初期状態でタクシーが選択されている場合の処理
     if (transportTypeSelect.value === 'taxi' && !taxiAllowed) {
         setMemoRequired(true);
+        // ★ 追加：初期表示時に企業にお伝え済みも表示
+        const companyNotifiedGroup = document.getElementById('company-notified-group');
+        const companyNotifiedCheckbox = document.getElementById('company_notified');
+        if (companyNotifiedGroup && companyNotifiedCheckbox) {
+            companyNotifiedGroup.style.display = 'block';
+            companyNotifiedCheckbox.required = true;
+        }
+        // 領収書必須マークも表示
+        const receiptRequiredMark = document.getElementById('receipt-required-mark');
+        if (receiptRequiredMark) {
+            receiptRequiredMark.style.display = 'inline';
+        }
+    }
+    
+    // ★ 追加：領収書削除ボタンの処理
+    const deleteReceiptBtn = document.getElementById('delete-receipt-btn');
+    const deleteReceiptInput = document.getElementById('delete_receipt');
+    
+    if (deleteReceiptBtn) {
+        deleteReceiptBtn.addEventListener('click', function() {
+            // タクシー不可契約でタクシーを選択している場合は削除不可
+            const transportType = transportTypeSelect.value;
+            if (transportType === 'taxi' && !taxiAllowed) {
+                const receiptFile = document.getElementById('receipt_file');
+                if (!receiptFile.files || receiptFile.files.length === 0) {
+                    alert('タクシー利用不可の契約でタクシーを利用する場合、領収書の削除はできません。\n新しい領収書をアップロードしてください。');
+                    return;
+                }
+            }
+            
+            if (confirm('領収書を削除してもよろしいですか？')) {
+                deleteReceiptInput.value = '1';
+                this.closest('.card').remove();
+                showMessage('領収書が削除されます（保存時に確定）', 'warning');
+            }
+        });
     }
     
     // 交通手段変更時の処理
     if (transportTypeSelect) {
         transportTypeSelect.addEventListener('change', function() {
             const transportType = this.value;
+            
+            // ★ 追加：領収書・企業お伝え済みの要素を取得
+            const receiptFileInput = document.getElementById('receipt_file');
+            const receiptRequiredMark = document.getElementById('receipt-required-mark');
+            const receiptHelpText = document.getElementById('receipt-help-text');
+            const companyNotifiedGroup = document.getElementById('company-notified-group');
+            const companyNotifiedCheckbox = document.getElementById('company_notified');
             
             // 往復・片道と地点入力のグループ要素を取得
             const tripTypeGroup = document.getElementById('trip_type_group');
@@ -865,10 +939,79 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // タクシー選択時の処理
             if (transportType === 'taxi' && !taxiAllowed) {
+                // ①メモを必須にする
                 setMemoRequired(true);
-                showMessage('タクシーが選択されました。この契約では原則利用不可のため、利用理由をメモ欄に必ず記載してください。', 'warning');
+                
+                // ②領収書を必須にする
+                if (receiptRequiredMark) {
+                    receiptRequiredMark.style.display = 'inline';
+                }
+                
+                if (hasExistingReceipt) {
+                    if (receiptHelpText) {
+                        receiptHelpText.innerHTML = '<strong class="text-warning">タクシー利用時は領収書が必須です（既存の領収書あり）</strong><br>' +
+                                                   '<small class="text-muted">新しいファイルをアップロードすると、既存のファイルは上書きされます。対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+                    }
+                    // 既存の領収書がある場合、削除ボタンを制御
+                    if (deleteReceiptBtn) {
+                        deleteReceiptBtn.disabled = false;
+                        deleteReceiptBtn.title = '新しい領収書をアップロードする場合のみ削除可能';
+                    }
+                } else {
+                    if (receiptFileInput) {
+                        receiptFileInput.required = true;
+                    }
+                    if (receiptHelpText) {
+                        receiptHelpText.innerHTML = '<strong class="text-warning">タクシー利用時は領収書のアップロードが必須です</strong><br>' +
+                                                   '<small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+                    }
+                }
+                
+                // ③企業にお伝え済みチェックボックスを表示＋必須にする
+                if (companyNotifiedGroup) {
+                    companyNotifiedGroup.style.display = 'block';
+                }
+                if (companyNotifiedCheckbox) {
+                    companyNotifiedCheckbox.required = true;
+                }
+                
+                showMessage('タクシーが選択されました。この契約では原則利用不可のため、以下の対応が必須です：\n' +
+                           '1. 利用理由をメモ欄に記載\n' +
+                           '2. 領収書の保持（既にアップロード済み' + (hasExistingReceipt ? 'です' : 'が必要です') + '）\n' +
+                           '3. 「企業にお伝え済み」にチェック', 'warning');
             } else {
+                // メモを任意にする
                 setMemoRequired(false);
+                
+                // 領収書を任意にする
+                if (receiptFileInput) {
+                    receiptFileInput.required = false;
+                }
+                if (receiptRequiredMark) {
+                    receiptRequiredMark.style.display = 'none';
+                }
+                if (receiptHelpText) {
+                    if (hasExistingReceipt) {
+                        receiptHelpText.innerHTML = '新しいファイルをアップロードすると、既存のファイルは上書きされます<br>' +
+                                                   '<small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+                    } else {
+                        receiptHelpText.innerHTML = '<small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+                    }
+                }
+                
+                // 領収書削除ボタンを有効化
+                if (deleteReceiptBtn) {
+                    deleteReceiptBtn.disabled = false;
+                    deleteReceiptBtn.title = '';
+                }
+                
+                // 企業にお伝え済みチェックボックスを非表示＋任意にする
+                if (companyNotifiedGroup) {
+                    companyNotifiedGroup.style.display = 'none';
+                }
+                if (companyNotifiedCheckbox) {
+                    companyNotifiedCheckbox.required = false;
+                }
             }
             
             // 交通手段に応じたプレースホルダーやヒントを設定
@@ -948,110 +1091,92 @@ document.addEventListener('DOMContentLoaded', function() {
             memoTextarea.required = true;
             memoRequiredMark.style.display = 'inline';
             memoHelpText.innerHTML = '<strong class="text-warning">タクシー利用時は理由の記載が必須です</strong>';
+            memoTextarea.placeholder = '例：終電後のため、体調不良のため、重い機材運搬のため等';
         } else {
             memoTextarea.required = false;
             memoRequiredMark.style.display = 'none';
             memoHelpText.innerHTML = '交通費に関する補足情報があれば記載してください<br><span class="text-danger">※個人情報や個人を特定できる情報は入力しないでください。</span>';
+            memoTextarea.placeholder = '特記事項があれば入力してください（例：複数路線利用、深夜料金込等）';
         }
     }
     
-    // 入力値変更監視
-    ['transport_type', 'trip_type', 'departure_point', 'arrival_point', 'amount', 'memo'].forEach(fieldId => {
-        const field = document.getElementById(fieldId);
+    // 変更検出関数
+    function checkForChanges() {
+        const currentValues = {
+            transport_type: transportTypeSelect.value,
+            trip_type: tripTypeSelect.value,
+            departure_point: departureInput.value,
+            arrival_point: arrivalInput.value,
+            amount: amountInput.value,
+            memo: memoTextarea.value
+        };
+        
+        let hasChanges = false;
+        let changes = [];
+        
+        // 交通手段の変更
+        if (currentValues.transport_type !== originalValues.transport_type) {
+            hasChanges = true;
+            changes.push(`交通手段: ${getTransportTypeLabel(originalValues.transport_type)} → ${getTransportTypeLabel(currentValues.transport_type)}`);
+        }
+        
+        // 往復・片道の変更
+        if (currentValues.trip_type !== originalValues.trip_type) {
+            hasChanges = true;
+            const oldLabel = originalValues.trip_type === 'round_trip' ? '往復' : '片道';
+            const newLabel = currentValues.trip_type === 'round_trip' ? '往復' : '片道';
+            changes.push(`往復・片道: ${oldLabel} → ${newLabel}`);
+        }
+        
+        // 出発地点の変更
+        if (currentValues.departure_point !== originalValues.departure_point) {
+            hasChanges = true;
+            changes.push(`出発地点: ${originalValues.departure_point || '(なし)'} → ${currentValues.departure_point || '(なし)'}`);
+        }
+        
+        // 到着地点の変更
+        if (currentValues.arrival_point !== originalValues.arrival_point) {
+            hasChanges = true;
+            changes.push(`到着地点: ${originalValues.arrival_point || '(なし)'} → ${currentValues.arrival_point || '(なし)'}`);
+        }
+        
+        // 金額の変更
+        if (currentValues.amount !== originalValues.amount) {
+            hasChanges = true;
+            const oldAmount = originalValues.amount ? `¥${Number(originalValues.amount).toLocaleString()}` : '¥0';
+            const newAmount = currentValues.amount ? `¥${Number(currentValues.amount).toLocaleString()}` : '¥0';
+            changes.push(`金額: ${oldAmount} → ${newAmount}`);
+        }
+        
+        // メモの変更
+        if (currentValues.memo !== originalValues.memo) {
+            hasChanges = true;
+            changes.push('メモ: 変更あり');
+        }
+        
+        // プレビュー表示
+        const changePreview = document.getElementById('change-preview');
+        const changeContent = document.getElementById('change-content');
+        
+        if (hasChanges && changePreview && changeContent) {
+            changePreview.style.display = 'block';
+            changeContent.innerHTML = '<ul class="mb-0">' + 
+                changes.map(c => `<li>${c}</li>`).join('') + 
+                '</ul>';
+        } else if (changePreview) {
+            changePreview.style.display = 'none';
+        }
+    }
+    
+    // 入力フィールドの変更を監視
+    [transportTypeSelect, tripTypeSelect, departureInput, arrivalInput, amountInput, memoTextarea].forEach(field => {
         if (field) {
             field.addEventListener('input', checkForChanges);
             field.addEventListener('change', checkForChanges);
         }
     });
     
-    // 変更チェック関数
-    function checkForChanges() {
-        const changes = [];
-        const currentValues = {
-            transport_type: document.getElementById('transport_type').value,
-            trip_type: document.getElementById('trip_type').value,
-            departure_point: document.getElementById('departure_point').value,
-            arrival_point: document.getElementById('arrival_point').value,
-            amount: document.getElementById('amount').value,
-            memo: document.getElementById('memo').value
-        };
-        
-        // 変更を検出
-        Object.keys(originalValues).forEach(key => {
-            if (originalValues[key] !== currentValues[key]) {
-                let label, oldValue, newValue;
-                
-                switch(key) {
-                    case 'transport_type':
-                        label = '交通手段';
-                        oldValue = getTransportTypeLabel(originalValues[key]);
-                        newValue = getTransportTypeLabel(currentValues[key]);
-                        break;
-                    case 'trip_type':
-                        label = '往復・片道';
-                        oldValue = originalValues[key] === 'round_trip' ? '往復' : '片道';
-                        newValue = currentValues[key] === 'round_trip' ? '往復' : '片道';
-                        break;
-                    case 'departure_point':
-                        label = '出発地点';
-                        oldValue = originalValues[key];
-                        newValue = currentValues[key];
-                        break;
-                    case 'arrival_point':
-                        label = '到着地点';
-                        oldValue = originalValues[key];
-                        newValue = currentValues[key];
-                        break;
-                    case 'amount':
-                        label = '金額';
-                        oldValue = formatAmount(originalValues[key]);
-                        newValue = formatAmount(currentValues[key]);
-                        break;
-                    case 'memo':
-                        label = 'メモ';
-                        oldValue = originalValues[key] || '(なし)';
-                        newValue = currentValues[key] || '(なし)';
-                        break;
-                }
-                
-                changes.push(`<strong>${label}:</strong> ${oldValue} → ${newValue}`);
-            }
-        });
-        
-        // 変更プレビューの表示/非表示
-        const changePreview = document.getElementById('change-preview');
-        const changeContent = document.getElementById('change-content');
-        
-        if (changes.length > 0) {
-            changeContent.innerHTML = changes.join('<br>');
-            changePreview.style.display = 'block';
-        } else {
-            changePreview.style.display = 'none';
-        }
-    }
-    
-    // 金額入力時のフォーマット
-    if (amountInput) {
-        amountInput.addEventListener('input', function() {
-            const value = parseInt(this.value);
-            if (value && value > 0) {
-                // 入力値の妥当性チェック
-                if (value > 999999) {
-                    this.value = 999999;
-                    showMessage('金額は999,999円以下で入力してください。', 'warning');
-                }
-                
-                // 高額な場合の警告
-                if (value > 10000 && value !== parseInt(originalValues.amount)) {
-                    showMessage(`金額が${value.toLocaleString()}円と高額です。必要に応じてメモ欄に理由を記載してください。`, 'info');
-                }
-            }
-        });
-    }
-
-    // === テンプレート機能のJavaScript ===
-    
-    // テンプレート保存チェックボックスの制御
+    // テンプレート保存チェックボックスの処理
     const saveAsTemplateCheck = document.getElementById('save_as_template');
     const templateNameSection = document.getElementById('template_name_section');
     
@@ -1065,38 +1190,15 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // テンプレート使用ボタンの処理
-    document.querySelectorAll('.template-btn, .template-use-btn').forEach(button => {
-        button.addEventListener('click', function() {
-            const templateId = this.dataset.templateId;
-            if (confirm('現在の入力内容がテンプレートの値で上書きされます。よろしいですか？')) {
-                loadTemplate(templateId);
-            }
-        });
-    });
-    
-    // フォーム変更時にテンプレート保存チェックボックスを有効化
-    const formFields = ['transport_type', 'trip_type', 'departure_point', 'arrival_point', 'amount', 'memo'];
-    formFields.forEach(fieldId => {
-        const field = document.getElementById(fieldId);
-        if (field) {
-            field.addEventListener('input', function() {
-                if (document.getElementById('used_template_id').value && saveAsTemplateCheck) {
-                    saveAsTemplateCheck.disabled = false;
-                }
-            });
-        }
-    });
-    
-    // テンプレート読み込み関数
-    function loadTemplate(templateId) {
+    // テンプレート適用関数
+    window.applyTemplate = function(templateId) {
         fetch(`<?= base_url('api/travel_expenses/template/') ?>${templateId}`)
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                if (data.success && data.data) {
                     const template = data.data;
                     
-                    // フォームにデータを設定
+                    // フォームに値を設定
                     document.getElementById('transport_type').value = template.transport_type;
                     document.getElementById('trip_type').value = template.trip_type;
                     document.getElementById('departure_point').value = template.departure_point;
@@ -1153,13 +1255,48 @@ document.addEventListener('DOMContentLoaded', function() {
             const selectedTransport = transportTypeSelect.value;
             const memo = memoTextarea.value.trim();
             
-            // タクシー利用不可契約でタクシーが選択され、メモが空の場合
-            if (selectedTransport === 'taxi' && !taxiAllowed && !memo) {
-                e.preventDefault();
-                showMessage('タクシー利用時は、メモ・備考欄に利用理由を必ず記載してください。', 'error');
-                memoTextarea.focus();
-                memoTextarea.scrollIntoView({ behavior: 'smooth' });
-                return false;
+            // ★ 修正：タクシー利用不可契約でタクシーが選択された場合の追加チェック
+            if (selectedTransport === 'taxi' && !taxiAllowed) {
+                // ①メモが空の場合
+                if (!memo) {
+                    e.preventDefault();
+                    showMessage('タクシー利用時は、メモ・備考欄に利用理由を必ず記載してください。', 'error');
+                    memoTextarea.focus();
+                    memoTextarea.scrollIntoView({ behavior: 'smooth' });
+                    return false;
+                }
+                
+                // ②領収書がない場合
+                const receiptFile = document.getElementById('receipt_file');
+                const deleteReceipt = document.getElementById('delete_receipt');
+                const hasNewUpload = receiptFile.files && receiptFile.files.length > 0;
+                const willDeleteExisting = deleteReceipt && deleteReceipt.value === '1';
+                
+                if (!hasExistingReceipt && !hasNewUpload) {
+                    e.preventDefault();
+                    showMessage('タクシー利用時は、領収書のアップロードが必須です。', 'error');
+                    receiptFile.focus();
+                    receiptFile.scrollIntoView({ behavior: 'smooth' });
+                    return false;
+                }
+                
+                if (hasExistingReceipt && willDeleteExisting && !hasNewUpload) {
+                    e.preventDefault();
+                    showMessage('タクシー利用時は、領収書が必須です。削除する場合は新しい領収書をアップロードしてください。', 'error');
+                    receiptFile.focus();
+                    receiptFile.scrollIntoView({ behavior: 'smooth' });
+                    return false;
+                }
+                
+                // ③企業にお伝え済みチェックがない場合
+                const companyNotified = document.getElementById('company_notified');
+                if (companyNotified && !companyNotified.checked) {
+                    e.preventDefault();
+                    showMessage('タクシー利用時は、「企業にお伝え済み」チェックが必須です。', 'error');
+                    companyNotified.focus();
+                    companyNotified.scrollIntoView({ behavior: 'smooth' });
+                    return false;
+                }
             }
             
             // 出発地点と到着地点が同じ場合の警告
@@ -1206,9 +1343,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 // ファイル形式チェック
-                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'application/pdf'];
-                if (!allowedTypes.includes(file.type)) {
-                    showMessage('対応していないファイル形式です。JPG、PNG、GIF、PDFファイルを選択してください。', 'error');
+                const allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'pdf'];
+                const fileName = file.name.toLowerCase();
+                const extension = fileName.split('.').pop();
+                
+                if (!allowedExtensions.includes(extension)) {
+                    showMessage('対応していないファイル形式です。JPG、PNG、GIF、PDFのいずれかを選択してください。', 'error');
                     this.value = '';
                     return;
                 }

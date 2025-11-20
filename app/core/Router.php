@@ -58,26 +58,85 @@ class Router {
         $staticExtensions = ['css', 'js', 'png', 'jpg', 'jpeg', 'gif', 'svg', 'ico', 'woff', 'woff2', 'ttf', 'eot', 'pdf', 'txt'];
         $extension = pathinfo($path, PATHINFO_EXTENSION);
         
-        // assetsディレクトリ内のファイルまたは静的ファイル拡張子をチェック
-        return preg_match('/^\/assets\//', $path) || in_array(strtolower($extension), $staticExtensions);
+        // uploadsディレクトリも静的ファイルとして扱う
+        return preg_match('/^\/assets\//', $path) || 
+               preg_match('/^\/uploads\//', $path) || 
+               in_array(strtolower($extension), $staticExtensions);
     }
     
     private function serveStaticFile($path) {
         // ドキュメントルートから実際のファイルパスを構築
         $documentRoot = $_SERVER['DOCUMENT_ROOT'];
         
-        // DOCUMENT_ROOTが既にop_website/publicを含んでいる場合の調整
-        if (strpos($documentRoot, 'op_website/public') !== false) {
-            // DOCUMENT_ROOTが既にop_website/publicの場合、そのまま使用
-            $filePath = $documentRoot . $path;
+        // uploadsディレクトリの場合
+        if (preg_match('/^\/uploads\//', $path)) {
+            // いくつかのパターンを試す（交通費が動作しているパターンを優先）
+            $possiblePaths = [];
+            
+            // パターン1: DOCUMENT_ROOT/../uploads (public外、交通費と同じ)
+            if (strpos($documentRoot, 'op_website/public') !== false || strpos($documentRoot, 'op_website\\public') !== false) {
+                // DOCUMENT_ROOTがpublicディレクトリの場合、親ディレクトリのuploads/を探す
+                $possiblePaths[] = dirname($documentRoot) . $path;
+            }
+            
+            // パターン2: DOCUMENT_ROOT/op_website/uploads (publicの外)
+            $possiblePaths[] = $documentRoot . '/op_website' . $path;
+            
+            // パターン3: DOCUMENT_ROOT/public/uploads（publicの中）
+            if (strpos($documentRoot, 'op_website/public') !== false || strpos($documentRoot, 'op_website\\public') !== false) {
+                $possiblePaths[] = $documentRoot . $path;
+            }
+            
+            // パターン4: DOCUMENT_ROOT/op_website/public/uploads
+            $possiblePaths[] = $documentRoot . '/op_website/public' . $path;
+            
+            // パターン5: DOCUMENT_ROOT/uploads
+            $possiblePaths[] = $documentRoot . $path;
+            
+            // 存在するパスを探す
+            $filePath = null;
+            foreach ($possiblePaths as $tryPath) {
+                // Windowsパスの正規化
+                $tryPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $tryPath);
+                
+                if (file_exists($tryPath) && is_file($tryPath)) {
+                    $filePath = $tryPath;
+                    break;
+                }
+            }
+            
+            if (!$filePath) {
+                // デバッグ用: 試したパスをログに記録
+                error_log("File not found for path: {$path}");
+                error_log("Tried paths: " . implode(", ", array_map(function($p) {
+                    return str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $p);
+                }, $possiblePaths)));
+                
+                $this->notFound();
+                return;
+            }
         } else {
-            // 通常の場合
-            $filePath = $documentRoot . '/op_website/public' . $path;
+            // assets等の通常の静的ファイル
+            if (strpos($documentRoot, 'op_website/public') !== false || strpos($documentRoot, 'op_website\\public') !== false) {
+                $filePath = $documentRoot . $path;
+            } else {
+                $filePath = $documentRoot . '/op_website/public' . $path;
+            }
+            
+            // Windowsパスの正規化
+            $filePath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $filePath);
         }
         
         // ファイルが存在するかチェック
         if (!file_exists($filePath) || !is_file($filePath)) {
             $this->notFound();
+            return;
+        }
+        
+        // ファイルの読み取り権限チェック
+        if (!is_readable($filePath)) {
+            http_response_code(403);
+            echo "403 Forbidden";
             return;
         }
         
@@ -102,11 +161,17 @@ class Router {
         $extension = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
         $mimeType = $mimeTypes[$extension] ?? 'application/octet-stream';
         
-        // キャッシュヘッダーを無効化（開発中）
+        // ヘッダーを設定
         header('Cache-Control: no-cache, no-store, must-revalidate');
         header('Pragma: no-cache');
         header('Expires: 0');
         header('Content-Type: ' . $mimeType);
+        
+        // PDFや画像の場合はブラウザで表示
+        if ($extension === 'pdf' || in_array($extension, ['png', 'jpg', 'jpeg', 'gif'])) {
+            $filename = basename($filePath);
+            header('Content-Disposition: inline; filename="' . $filename . '"');
+        }
         
         // ファイルを出力
         readfile($filePath);

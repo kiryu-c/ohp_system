@@ -20,8 +20,12 @@ class User extends BaseModel {
     }
     
     public function createUser($data) {
-        if (isset($data['password'])) {
+        // パスワードが空でない文字列の場合のみハッシュ化
+        if (isset($data['password']) && !empty($data['password'])) {
             $data['password'] = password_hash($data['password'], PASSWORD_DEFAULT);
+        } elseif (isset($data['password'])) {
+            // 空やnullの場合はキーを削除（DBにNULLが入る）
+            unset($data['password']);
         }
         
         return $this->create($data);

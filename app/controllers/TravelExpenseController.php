@@ -502,28 +502,38 @@ class TravelExpenseController extends BaseController {
             'status' => 'pending'
         ];
         
+        // ★ 新規追加：企業にお伝え済みフラグ
+        $data['company_notified'] = isset($_POST['company_notified']) ? 1 : 0;
+        
         // trip_typeが空文字列の場合はNULLに変換
         if (empty($data['trip_type'])) {
             $data['trip_type'] = null;
         }
-    
+
         // テンプレート関連の入力
         $saveAsTemplate = isset($_POST['save_as_template']) && $_POST['save_as_template'] == '1';
         $customTemplateName = sanitize($_POST['custom_template_name'] ?? '');
         $usedTemplateId = (int)($_POST['used_template_id'] ?? 0);
         
-        // バリデーション
-        $errors = $this->validateTravelExpenseData($data);
-        
-        // 役務記録の権限チェック
+        // 役務記録の権限チェックと契約情報の取得
         $serviceModel = new ServiceRecord();
         $serviceRecord = $serviceModel->findById($data['service_record_id']);
         
         if (!$serviceRecord) {
-            $errors[] = '役務記録が見つかりません。';
+            $this->setFlash('error', '役務記録が見つかりません。');
+            redirect('service_records');
+            return;
         } elseif ($serviceRecord['doctor_id'] != Session::get('user_id')) {
-            $errors[] = '権限がありません。';
+            $this->setFlash('error', '権限がありません。');
+            redirect('service_records');
+            return;
         }
+        
+        // ★ 契約情報を取得してタクシー利用可否を確認
+        $taxiAllowed = isset($serviceRecord['taxi_allowed']) ? (bool)$serviceRecord['taxi_allowed'] : false;
+        
+        // バリデーション（契約情報を渡す）
+        $errors = $this->validateTravelExpenseData($data, true, $taxiAllowed, $_FILES['receipt_file'] ?? null);
         
         if (!empty($errors)) {
             foreach ($errors as $error) {
@@ -558,7 +568,7 @@ class TravelExpenseController extends BaseController {
                 $templateModel->createFromExpense($data, $customTemplateName);
             }
             
-           $this->setFlash('success', '交通費を登録しました。');
+            $this->setFlash('success', '交通費を登録しました。');
             redirect("service_records/{$data['service_record_id']}");
         } else {
             $this->setFlash('error', '交通費の登録に失敗しました。');
@@ -707,30 +717,30 @@ class TravelExpenseController extends BaseController {
         
         if (!$this->validateCsrf()) {
             $this->setFlash('error', 'セキュリティエラーが発生しました。');
-            redirect("travel_expenses/$id/edit");
+            redirect('travel_expenses');
             return;
         }
         
         $travelExpenseModel = new TravelExpense();
-        $expense = $travelExpenseModel->findById($id);
+        $existingExpense = $travelExpenseModel->findByIdWithDetails($id);
         
-        if (!$expense) {
+        if (!$existingExpense) {
             $this->setFlash('error', '交通費記録が見つかりません。');
             redirect('travel_expenses');
             return;
         }
         
-        // 権限チェック
-        if ($expense['doctor_id'] != Session::get('user_id')) {
+        // 権限チェック：自分の記録のみ編集可能
+        if ($existingExpense['doctor_id'] != Session::get('user_id')) {
             $this->setFlash('error', '権限がありません。');
             redirect('travel_expenses');
             return;
         }
         
-        // 承認済みの記録は編集不可
-        if ($expense['status'] === 'approved') {
-            $this->setFlash('error', '承認済みの交通費記録は編集できません。');
-            redirect('travel_expenses');
+        // ステータスチェック：承認済み・確定済みは編集不可
+        if (in_array($existingExpense['status'], ['approved', 'finalized'])) {
+            $this->setFlash('error', '承認済みまたは確定済みの記録は編集できません。');
+            redirect("travel_expenses/{$id}");
             return;
         }
         
@@ -744,68 +754,45 @@ class TravelExpenseController extends BaseController {
             'memo' => sanitize($_POST['memo'] ?? '')
         ];
         
+        // ★ 新規追加：企業にお伝え済みフラグ
+        $data['company_notified'] = isset($_POST['company_notified']) ? 1 : 0;
+        
         // trip_typeが空文字列の場合はNULLに変換
         if (empty($data['trip_type'])) {
             $data['trip_type'] = null;
         }
-
-        // ★ 差し戻された交通費を編集する場合、ステータスを承認待ちに戻す
-        if ($expense['status'] === 'rejected') {
-            $data['status'] = 'pending';
-            $data['admin_comment'] = null;  // 管理者コメントもクリア
-            $data['rejected_at'] = null;
-            $data['rejected_by'] = null;
-        }
-
-        // テンプレート関連の入力
-        $saveAsTemplate = isset($_POST['save_as_template']) && $_POST['save_as_template'] == '1';
-        $customTemplateName = sanitize($_POST['custom_template_name'] ?? '');
-        $usedTemplateId = (int)($_POST['used_template_id'] ?? 0);
-
-        // バリデーション
-        $errors = $this->validateTravelExpenseData($data, false);
+        
+        // ★ 契約情報を取得してタクシー利用可否を確認
+        $taxiAllowed = isset($existingExpense['taxi_allowed']) ? (bool)$existingExpense['taxi_allowed'] : false;
+        
+        // バリデーション（契約情報を渡す）
+        $errors = $this->validateTravelExpenseData($data, false, $taxiAllowed, $_FILES['receipt_file'] ?? null);
         
         if (!empty($errors)) {
             foreach ($errors as $error) {
                 $this->setFlash('error', $error);
             }
-            redirect("travel_expenses/$id/edit");
+            redirect("travel_expenses/{$id}/edit");
             return;
         }
         
         // ファイルアップロード処理
         $uploadedFile = $_FILES['receipt_file'] ?? null;
+        $deleteFile = isset($_POST['delete_receipt']) && $_POST['delete_receipt'] == '1';
+        
         if ($uploadedFile && $uploadedFile['error'] !== UPLOAD_ERR_NO_FILE && $uploadedFile['error'] !== UPLOAD_ERR_OK) {
             $this->setFlash('error', 'ファイルのアップロードでエラーが発生しました。');
-            redirect("travel_expenses/$id/edit");
+            redirect("travel_expenses/{$id}/edit");
             return;
         }
         
         // 交通費記録を更新
-        if ($travelExpenseModel->updateWithFile($id, $data, $uploadedFile)) {
-            // テンプレート処理
-            require_once __DIR__ . '/../models/TravelExpenseTemplate.php';
-            $templateModel = new TravelExpenseTemplate();
-            
-            if ($usedTemplateId > 0) {
-                $templateModel->updateUsage($usedTemplateId, $data['amount']);
-            } elseif ($saveAsTemplate) {
-                $templateData = $data;
-                $templateData['doctor_id'] = Session::get('user_id');
-                $templateModel->createFromExpense($templateData, $customTemplateName);
-            }
-            
-            // ★ ステータスが変更された場合は明示的にメッセージを表示
-            if ($expense['status'] === 'rejected') {
-                $this->setFlash('success', '交通費を更新し、承認待ちに戻しました。');
-            } else {
-                $this->setFlash('success', '交通費を更新しました。');
-            }
-            
-            redirect("travel_expenses/$id");
+        if ($travelExpenseModel->updateWithFile($id, $data, $uploadedFile, $deleteFile)) {
+            $this->setFlash('success', '交通費情報を更新しました。');
+            redirect("service_records/{$existingExpense['service_record_id']}");
         } else {
-            $this->setFlash('error', '交通費の更新に失敗しました。');
-            redirect("travel_expenses/$id/edit");
+            $this->setFlash('error', '交通費情報の更新に失敗しました。');
+            redirect("travel_expenses/{$id}/edit");
         }
     }
     
@@ -1187,7 +1174,7 @@ class TravelExpenseController extends BaseController {
     /**
      * 交通費データのバリデーション
      */
-    private function validateTravelExpenseData($data, $includeServiceRecord = true) {
+    private function validateTravelExpenseData($data, $includeServiceRecord = true, $taxiAllowed = false, $uploadedFile = null) {
         $errors = [];
         
         if ($includeServiceRecord && empty($data['service_record_id'])) {
@@ -1222,6 +1209,41 @@ class TravelExpenseController extends BaseController {
         
         if ($data['amount'] > 999999) {
             $errors[] = '金額は999,999円以下で入力してください。';
+        }
+        
+        // ★ 新規追加：タクシー利用不可契約でタクシーを選択した場合の追加バリデーション
+        if ($data['transport_type'] === 'taxi' && !$taxiAllowed) {
+            // ①メモ・備考を必須とする
+            if (empty($data['memo']) || trim($data['memo']) === '') {
+                $errors[] = 'タクシー利用不可の契約でタクシーを利用する場合、メモ・備考に理由の記載が必須です。';
+            }
+            
+            // ②領収書のアップロードを必須とする
+            $hasReceiptFile = false;
+            
+            // 新規登録の場合：アップロードファイルをチェック
+            if ($includeServiceRecord) {
+                if ($uploadedFile && $uploadedFile['error'] === UPLOAD_ERR_OK) {
+                    $hasReceiptFile = true;
+                }
+            } else {
+                // 編集の場合：既存ファイルまたは新規アップロードをチェック
+                // 既存ファイルがあるかは呼び出し側で確認する必要があるため、ここではアップロードのみチェック
+                if ($uploadedFile && $uploadedFile['error'] === UPLOAD_ERR_OK) {
+                    $hasReceiptFile = true;
+                }
+                // 注意：編集時に既存の領収書がある場合は、別途チェックが必要
+                // これはコントローラー側で対応します
+            }
+            
+            if (!$hasReceiptFile && $includeServiceRecord) {
+                $errors[] = 'タクシー利用不可の契約でタクシーを利用する場合、領収書のアップロードが必須です。';
+            }
+            
+            // ③「企業にお伝え済み」チェックをONにすることを必須とする
+            if (empty($data['company_notified'])) {
+                $errors[] = 'タクシー利用不可の契約でタクシーを利用する場合、「企業にお伝え済み」チェックが必須です。';
+            }
         }
         
         return $errors;

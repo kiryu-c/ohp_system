@@ -332,11 +332,12 @@ if (!function_exists('format_datetime')) {
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="receipt_file" class="form-label">
-                                        <i class="fas fa-receipt me-1"></i>レシート・領収書（任意）
+                                        <i class="fas fa-receipt me-1"></i>レシート・領収書
+                                        <span id="receipt-required-mark" class="text-danger" style="display: none;">*</span>
                                     </label>
                                     <input type="file" class="form-control" id="receipt_file" name="receipt_file" 
-                                           accept=".jpg,.jpeg,.png,.gif,.pdf">
-                                    <div class="form-text">
+                                        accept=".jpg,.jpeg,.png,.gif,.pdf">
+                                    <div class="form-text" id="receipt-help-text">
                                         レシートや領収書の画像ファイルまたはPDFをアップロードできます<br>
                                         <small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>
                                     </div>
@@ -353,6 +354,28 @@ if (!function_exists('format_datetime')) {
                                       placeholder="特記事項があれば入力してください（例：複数路線利用、深夜料金込等）"></textarea>
                             <div class="form-text" id="memo-help-text">交通費に関する補足情報があれば記載してください<br>
                             <span class="text-danger">※個人情報や個人を特定できる情報は入力しないでください。</span></div>
+                        </div>
+
+                        <!-- 企業にお伝え済みチェックボックス（タクシー不可時のみ表示） -->
+                        <div class="mb-3" id="company-notified-group" style="display: none;">
+                            <div class="card border-warning">
+                                <div class="card-body">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="company_notified" name="company_notified" value="1">
+                                        <label class="form-check-label" for="company_notified">
+                                            <strong class="text-danger">
+                                                <i class="fas fa-exclamation-circle me-1"></i>
+                                                企業にお伝え済み <span class="text-danger">*</span>
+                                            </strong>
+                                        </label>
+                                    </div>
+                                    <div class="form-text mt-2">
+                                        <i class="fas fa-info-circle me-1 text-primary"></i>
+                                        タクシー利用について、事前に企業担当者へ連絡・承諾を得た場合にチェックしてください。<br>
+                                        <small class="text-danger">※タクシー利用不可の契約でタクシーを利用する場合、このチェックが必須です。</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         
                         <!-- テンプレート保存オプション -->
@@ -667,6 +690,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const memoRequiredMark = document.getElementById('memo-required-mark');
         const memoHelpText = document.getElementById('memo-help-text');
         
+        // ★ 新規追加：領収書・企業お伝え済みの要素を取得
+        const receiptFileInput = document.getElementById('receipt_file');
+        const receiptRequiredMark = document.getElementById('receipt-required-mark');
+        const receiptHelpText = document.getElementById('receipt-help-text');
+        const companyNotifiedGroup = document.getElementById('company-notified-group');
+        const companyNotifiedCheckbox = document.getElementById('company_notified');
+        
         // 往復・片道と地点入力のグループ要素を取得
         const tripTypeGroup = document.getElementById('trip_type_group');
         const routeGroup = document.getElementById('route_group');
@@ -703,18 +733,42 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // タクシーが選択された場合の処理
         if (transportType === 'taxi' && !taxiAllowed) {
-            // メモを必須にする
+            // ①メモを必須にする
             memoTextarea.required = true;
             memoRequiredMark.style.display = 'inline';
             memoHelpText.innerHTML = '<strong class="text-warning">タクシー利用時は理由の記載が必須です</strong>';
             memoTextarea.placeholder = '例：終電後のため、体調不良のため、重い機材運搬のため等';
             
-            showMessage('タクシーが選択されました。この契約では原則利用不可のため、利用理由をメモ欄に必ず記載してください。', 'warning');
+            // ②領収書を必須にする
+            receiptFileInput.required = true;
+            receiptRequiredMark.style.display = 'inline';
+            receiptHelpText.innerHTML = '<strong class="text-warning">タクシー利用時は領収書のアップロードが必須です</strong><br>' +
+                                    '<small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+            
+            // ③企業にお伝え済みチェックボックスを表示＋必須にする
+            companyNotifiedGroup.style.display = 'block';
+            companyNotifiedCheckbox.required = true;
+            
+            showMessage('タクシーが選択されました。この契約では原則利用不可のため、以下の対応が必須です：\n' +
+                    '1. 利用理由をメモ欄に記載\n' +
+                    '2. 領収書のアップロード\n' +
+                    '3. 「企業にお伝え済み」にチェック', 'warning');
         } else {
             // メモを任意にする
             memoTextarea.required = false;
             memoRequiredMark.style.display = 'none';
             memoHelpText.innerHTML = '交通費に関する補足情報があれば記載してください<br><span class="text-danger">※個人情報や個人を特定できる情報は入力しないでください。</span>';
+            
+            // 領収書を任意にする
+            receiptFileInput.required = false;
+            receiptRequiredMark.style.display = 'none';
+            receiptHelpText.innerHTML = 'レシートや領収書の画像ファイルまたはPDFをアップロードできます<br>' +
+                                    '<small class="text-muted">対応形式：JPG, PNG, GIF, PDF（最大5MB）</small>';
+            
+            // 企業にお伝え済みチェックボックスを非表示＋任意にする
+            companyNotifiedGroup.style.display = 'none';
+            companyNotifiedCheckbox.required = false;
+            companyNotifiedCheckbox.checked = false;
         }
         
         // 交通手段に応じたプレースホルダーやヒントを設定
@@ -723,7 +777,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 departureInput.placeholder = '例：○○駅';
                 arrivalInput.placeholder = '例：○○駅';
                 if (!memoTextarea.required) {
-                    memoTextarea.placeholder = '例：複数路線利用、IC カード利用';
+                    memoTextarea.placeholder = '例：複数路線利用、ICカード利用';
                 }
                 break;
             case 'bus':
@@ -769,12 +823,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 break;
             case 'airplane':
-                    departureInput.placeholder = '例：○○空港';
-                    arrivalInput.placeholder = '例：○○空港';
-                    if (!memoTextarea.required) {
-                        memoTextarea.placeholder = '例：便名、席種など';
-                    }
-                    break;
+                departureInput.placeholder = '例：○○空港';
+                arrivalInput.placeholder = '例：○○空港';
+                if (!memoTextarea.required) {
+                    memoTextarea.placeholder = '例：便名、席種など';
+                }
+                break;
             case 'other':
                 departureInput.placeholder = '例：出発地点';
                 arrivalInput.placeholder = '例：到着地点';
@@ -1047,6 +1101,12 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage('システムエラーが発生しました。', 'error');
         });
     }
+});
+
+// ページ読み込み時に初期状態を設定
+document.addEventListener('DOMContentLoaded', function() {
+    // 初期の交通手段に応じて表示を調整
+    transportTypeSelect.dispatchEvent(new Event('change'));
 });
 
 // メッセージ表示関数

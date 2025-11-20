@@ -1138,6 +1138,7 @@ CREATE TABLE `travel_expenses` (
   `receipt_file_name` varchar(255) DEFAULT NULL COMMENT 'レシートファイル名',
   `receipt_file_size` int(11) DEFAULT NULL COMMENT 'レシートファイルサイズ',
   `memo` text DEFAULT NULL COMMENT 'メモ・備考',
+  `company_notified` tinyint(1) DEFAULT 0 COMMENT '企業にお伝え済み（タクシー不可契約でタクシー利用時）',
   `status` enum('pending','approved','rejected','finalized') NOT NULL DEFAULT 'pending' COMMENT 'ステータス',
   `approved_at` timestamp NULL DEFAULT NULL COMMENT '承認日時',
   `approved_by` int(11) DEFAULT NULL COMMENT '承認者ID',
