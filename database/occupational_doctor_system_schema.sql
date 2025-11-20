@@ -118,7 +118,7 @@ COMMIT;
 CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `login_id` varchar(50) NOT NULL,
-  `password` varchar(255) NOT NULL,
+  `password` varchar(255) DEFAULT NULL,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) NOT NULL,
   `phone` varchar(20) DEFAULT NULL,
@@ -144,7 +144,8 @@ CREATE TABLE `users` (
   `two_factor_recovery_codes` text DEFAULT NULL COMMENT 'リカバリーコード(JSON、暗号化)',
   `two_factor_enabled_at` timestamp NULL DEFAULT NULL COMMENT '2FA有効化日時',
   `business_classification` enum('taxable','tax_exempt') DEFAULT NULL COMMENT '事業者区分(課税事業者/免税事業者)',
-  `invoice_registration_number` varchar(14) DEFAULT NULL COMMENT 'インボイス登録番号(T+13桁)'
+  `invoice_registration_number` varchar(14) DEFAULT NULL COMMENT 'インボイス登録番号(T+13桁)',
+  `partner_id` varchar(10) DEFAULT NULL COMMENT 'パートナーID（産業医のみ使用、10桁までの文字列）'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -166,7 +167,8 @@ ALTER TABLE `users`
   ADD KEY `idx_postal_code` (`postal_code`),
   ADD KEY `idx_two_factor_enabled` (`two_factor_enabled`),
   ADD KEY `idx_business_classification` (`business_classification`),
-  ADD KEY `idx_invoice_registration_number` (`invoice_registration_number`);
+  ADD KEY `idx_invoice_registration_number` (`invoice_registration_number`),
+  ADD KEY `idx_partner_id` (`partner_id`);
 
 --
 -- ダンプしたテーブルの AUTO_INCREMENT

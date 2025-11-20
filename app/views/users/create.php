@@ -127,6 +127,19 @@
                     
                     <div class="col-md-6">
                         <div class="mb-3">
+                            <label for="partner_id" class="form-label">パートナーID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="partner_id" name="partner_id" 
+                                   value="<?= htmlspecialchars($_POST['partner_id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
+                                   maxlength="10"
+                                   placeholder="例: A123456789">
+                            <div class="form-text">10桁までの文字列で入力してください</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
                             <label for="trade_name" class="form-label">屋号</label>
                             <input type="text" class="form-control" id="trade_name" name="trade_name" 
                                    value="<?= htmlspecialchars($_POST['trade_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
@@ -370,6 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const doctorFields = document.getElementById('doctor-fields');
     const companyFields = document.getElementById('company-fields');
     const contractTypeField = document.getElementById('contract_type');
+    const partnerIdField = document.getElementById('partner_id');
     const companyIdField = document.getElementById('company_id');
     const branchSelectionArea = document.getElementById('branch-selection-area');
     const passwordField = document.getElementById('password');
@@ -515,12 +529,14 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 必須属性をリセット
         contractTypeField.removeAttribute('required');
+        partnerIdField.removeAttribute('required');
         companyIdField.removeAttribute('required');
         
         // 選択されたタイプに応じてフィールドを表示
         if (selectedType === 'doctor') {
             doctorFields.style.display = 'block';
             contractTypeField.setAttribute('required', 'required');
+            partnerIdField.setAttribute('required', 'required');
         } else if (selectedType === 'company') {
             companyFields.style.display = 'block';
             companyIdField.setAttribute('required', 'required');
@@ -597,9 +613,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
         
-        // 産業医以外の場合は契約形態をクリア
+        // 産業医以外の場合は契約形態とパートナーIDをクリア
         if (userType !== 'doctor') {
             contractTypeField.value = '';
+            partnerIdField.value = '';
         }
         
         // 企業ユーザー以外の場合は企業IDをクリア

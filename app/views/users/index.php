@@ -304,6 +304,9 @@ function buildPaginationUrl($page) {
                                 </td>
                                 <td>
                                     <code><?= htmlspecialchars($user['login_id'], ENT_QUOTES, 'UTF-8') ?></code>
+                                    <?php if ($user['user_type'] === 'doctor' && !empty($user['partner_id'])): ?>
+                                        <br><small class="text-muted">パートナーID: <?= htmlspecialchars($user['partner_id'], ENT_QUOTES, 'UTF-8') ?></small>
+                                    <?php endif; ?>
                                 </td>
                                 <td>
                                     <small><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></small>
@@ -528,6 +531,9 @@ function buildPaginationUrl($page) {
                                 <div class="d-flex flex-column">
                                     <div class="mb-1">
                                         <strong>ID:</strong> <code><?= htmlspecialchars($user['login_id'], ENT_QUOTES, 'UTF-8') ?></code>
+                                        <?php if ($user['user_type'] === 'doctor' && !empty($user['partner_id'])): ?>
+                                            <br><small class="text-muted ms-3">パートナーID: <?= htmlspecialchars($user['partner_id'], ENT_QUOTES, 'UTF-8') ?></small>
+                                        <?php endif; ?>
                                     </div>
                                     <div>
                                         <strong>Email:</strong> <small><?= htmlspecialchars($user['email'], ENT_QUOTES, 'UTF-8') ?></small>

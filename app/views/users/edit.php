@@ -142,6 +142,20 @@
                     
                     <div class="col-md-6">
                         <div class="mb-3">
+                            <label for="partner_id" class="form-label">パートナーID <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="partner_id" name="partner_id" 
+                                   value="<?= htmlspecialchars($user['partner_id'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
+                                   maxlength="10"
+                                   placeholder="例: A123456789"
+                                   <?= $user['user_type'] === 'doctor' ? 'required' : '' ?>>
+                            <div class="form-text">10桁までの文字列で入力してください</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
                             <label for="trade_name" class="form-label">屋号</label>
                             <input type="text" class="form-control" id="trade_name" name="trade_name" 
                                    value="<?= htmlspecialchars($user['trade_name'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
@@ -708,6 +722,24 @@ document.addEventListener('DOMContentLoaded', function() {
             // 産業医フィールドの表示/非表示
             if (doctorFields) {
                 doctorFields.style.display = userType === 'doctor' ? 'block' : 'none';
+                
+                // パートナーIDの必須制御
+                const partnerIdField = document.getElementById('partner_id');
+                const contractTypeField = document.getElementById('contract_type');
+                if (partnerIdField) {
+                    if (userType === 'doctor') {
+                        partnerIdField.setAttribute('required', 'required');
+                    } else {
+                        partnerIdField.removeAttribute('required');
+                    }
+                }
+                if (contractTypeField) {
+                    if (userType === 'doctor') {
+                        contractTypeField.setAttribute('required', 'required');
+                    } else {
+                        contractTypeField.removeAttribute('required');
+                    }
+                }
             }
             
             // 企業ユーザーフィールドの表示/非表示

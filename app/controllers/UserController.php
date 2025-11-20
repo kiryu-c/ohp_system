@@ -216,6 +216,7 @@ class UserController extends BaseController {
         $postalCode = sanitize($_POST['postal_code'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $tradeName = sanitize($_POST['trade_name'] ?? '');
+        $partnerIdInput = sanitize($_POST['partner_id'] ?? '');
         $bankName = sanitize($_POST['bank_name'] ?? '');
         $bankBranchName = sanitize($_POST['bank_branch_name'] ?? '');
         $bankAccountType = $_POST['bank_account_type'] ?? 'ordinary';
@@ -287,6 +288,13 @@ class UserController extends BaseController {
         if ($userType === 'doctor') {
             if (empty($contractType)) {
                 $errors[] = '産業医の場合は契約形態を選択してください。';
+            }
+            
+            // パートナーIDのバリデーション
+            if (empty($partnerIdInput)) {
+                $errors[] = '産業医の場合はパートナーIDを入力してください。';
+            } elseif (strlen($partnerIdInput) > 10) {
+                $errors[] = 'パートナーIDは10桁以内で入力してください。';
             }
             
             // 産業医用項目のバリデーション
@@ -361,6 +369,7 @@ class UserController extends BaseController {
             $data['postal_code'] = $postalCode ?: null;
             $data['address'] = $address ?: null;
             $data['trade_name'] = $tradeName ?: null;
+            $data['partner_id'] = $partnerIdInput ?: null;
             $data['bank_name'] = $bankName ?: null;
             $data['bank_branch_name'] = $bankBranchName ?: null;
             $data['bank_account_type'] = $bankAccountType;
@@ -508,6 +517,7 @@ class UserController extends BaseController {
         $postalCode = sanitize($_POST['postal_code'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $tradeName = sanitize($_POST['trade_name'] ?? '');
+        $partnerIdInput = sanitize($_POST['partner_id'] ?? '');
         $bankName = sanitize($_POST['bank_name'] ?? '');
         $bankBranchName = sanitize($_POST['bank_branch_name'] ?? '');
         $bankAccountType = $_POST['bank_account_type'] ?? 'ordinary';
@@ -592,6 +602,13 @@ class UserController extends BaseController {
                 $errors[] = '産業医の場合は契約形態を選択してください。';
             }
             
+            // パートナーIDのバリデーション
+            if (empty($partnerIdInput)) {
+                $errors[] = '産業医の場合はパートナーIDを入力してください。';
+            } elseif (strlen($partnerIdInput) > 10) {
+                $errors[] = 'パートナーIDは10桁以内で入力してください。';
+            }
+            
             // 産業医用項目のバリデーション
             if (!empty($postalCode) && !preg_match('/^\d{3}-?\d{4}$/', $postalCode)) {
                 $errors[] = '郵便番号は123-4567の形式で入力してください。';
@@ -668,6 +685,7 @@ class UserController extends BaseController {
             $data['postal_code'] = $postalCode ?: null;
             $data['address'] = $address ?: null;
             $data['trade_name'] = $tradeName ?: null;
+            $data['partner_id'] = $partnerIdInput ?: null;
             $data['bank_name'] = $bankName ?: null;
             $data['bank_branch_name'] = $bankBranchName ?: null;
             $data['bank_account_type'] = $bankAccountType;
@@ -680,6 +698,7 @@ class UserController extends BaseController {
             $data['postal_code'] = null;
             $data['address'] = null;
             $data['trade_name'] = null;
+            $data['partner_id'] = null;
             $data['bank_name'] = null;
             $data['bank_branch_name'] = null;
             $data['bank_account_type'] = 'ordinary';
