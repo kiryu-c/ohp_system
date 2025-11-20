@@ -741,7 +741,7 @@ class ContractController extends BaseController {
                 ORDER BY 
                     CASE WHEN c.end_date IS NOT NULL AND c.end_date < CURDATE() THEN 1 ELSE 0 END,
                     {$orderByColumn} {$sortOrder},
-                    comp.name ASC
+                    comp.name ASC, b.name ASC, effective_date ASC
                 LIMIT :limit OFFSET :offset";
 
         $stmt = $db->prepare($sql);
