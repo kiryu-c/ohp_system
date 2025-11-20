@@ -1063,7 +1063,7 @@
                                                 </div>
                                             </div>
                                             <small class="text-muted">
-                                                <?= format_hours_minutes($thisMonthHours) ?> / <?= format_hours_minutes($monthlyHours) ?>
+                                                <?= format_hours_minutes($regularHours) ?> / <?= format_hours_minutes($monthlyHours) ?>
                                             </small>
                                             <?php } ?>
                                         </td>
@@ -1258,7 +1258,7 @@
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <small class="text-muted">進捗</small>
                                             <small class="text-muted">
-                                                <?= format_hours_minutes($thisMonthHours) ?> / <?= format_hours_minutes($monthlyHours) ?>
+                                                <?= format_hours_minutes($regularHours) ?> / <?= format_hours_minutes($monthlyHours) ?>
                                             </small>
                                         </div>
                                         <div class="progress" style="height: 24px;">

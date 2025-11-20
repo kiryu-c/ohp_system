@@ -430,7 +430,7 @@
                                                             date('n'),
                                                             get_database_connection()
                                                         );
-                                                        $remainingHours = $monthlyHoursForRemaining - ($contract['this_month_hours'] ?? 0);
+                                                        $remainingHours = $monthlyHoursForRemaining - ($contract['regular_hours'] ?? 0);
                                                     } else {
                                                         $remainingHours = $contract['remaining_hours'];
                                                     }
@@ -478,8 +478,8 @@
                                                             $monthlyHours = $contract['regular_visit_hours'] ?? 0;
                                                         }
 
-                                                        $thisMonthHours = $contract['this_month_hours'] ?? 0;
-                                                        $actualPercentage = $monthlyHours > 0 ? ($thisMonthHours / $monthlyHours) * 100 : 0;
+                                                        $thisMonthRegularHours = $contract['regular_hours'] ?? 0;
+                                                        $actualPercentage = $monthlyHours > 0 ? ($thisMonthRegularHours / $monthlyHours) * 100 : 0;
 
                                                         // 表示用の進捗率（100%でキャップ）
                                                         $displayPercentage = min(100, $actualPercentage);
@@ -501,7 +501,7 @@
                                                             aria-valuenow="<?= $actualPercentage ?>" 
                                                             aria-valuemin="0" 
                                                             aria-valuemax="100"
-                                                            title="<?= format_total_hours($thisMonthHours) ?> / <?= format_total_hours($monthlyHours) ?> (定期+延長)">
+                                                            title="<?= format_total_hours($thisMonthRegularHours) ?> / <?= format_total_hours($monthlyHours) ?> (定期+延長)">
                                                             <?= round($actualPercentage) ?>%
                                                         </div>
                                                         
@@ -890,7 +890,7 @@
                                                                 date('n'),
                                                                 get_database_connection()
                                                             );
-                                                            $remainingHours = $monthlyHoursForRemaining - ($contract['this_month_hours'] ?? 0);
+                                                            $remainingHours = $monthlyHoursForRemaining - ($contract['regular_hours'] ?? 0);
                                                             ?>
                                                             <div class="mt-1">
                                                                 <small class="<?= $remainingHours > 0 ? 'text-success' : 'text-danger' ?>">

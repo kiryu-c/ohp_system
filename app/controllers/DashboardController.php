@@ -555,10 +555,10 @@ class DashboardController extends BaseController {
                         $db
                     );
                     
-                    // 総役務時間ベースで残り時間と使用率を計算（延長を許可）
-                    $contract['remaining_hours'] = $monthlyHours - $totalUsedHours;
+                    // 定期訪問時間ベースで使用率を計算
+                    $contract['remaining_hours'] = $monthlyHours - ($stats['regular_hours'] ?? 0);
                     $contract['usage_percentage'] = $monthlyHours > 0 ? 
-                        ($totalUsedHours / $monthlyHours) * 100 : 0;
+                        (($stats['regular_hours'] ?? 0) / $monthlyHours) * 100 : 0;
                         
                     // 定期役務のみの情報も保持（別用途で必要な場合）
                     $contract['remaining_regular_hours'] = max(0, $monthlyHours - ($stats['regular_hours'] ?? 0));
@@ -574,17 +574,17 @@ class DashboardController extends BaseController {
                     // 隔月契約の場合
                     if ($isVisitMonth) {
                         // 訪問月の場合：通常の計算
-                        $contract['remaining_hours'] = $regularVisitHours - $totalUsedHours;
+                        $contract['remaining_hours'] = $regularVisitHours - ($stats['regular_hours'] ?? 0);
                         $contract['usage_percentage'] = $regularVisitHours > 0 ? 
-                            ($totalUsedHours / $regularVisitHours) * 100 : 0;
+                            (($stats['regular_hours'] ?? 0) / $regularVisitHours) * 100 : 0;
                     } else {
                         // 非訪問月だが実績がある場合：実績ベースで計算
                         if ($totalUsedHours > 0) {
                             // 実績があるので使用率は100%以上も許可（臨時訪問等のため）
-                            $contract['remaining_hours'] = $regularVisitHours - $totalUsedHours;
+                            $contract['remaining_hours'] = $regularVisitHours - ($stats['regular_hours'] ?? 0);
                             $contract['usage_percentage'] = $regularVisitHours > 0 ? 
-                                ($totalUsedHours / $regularVisitHours) * 100 : 
-                                ($totalUsedHours > 0 ? 100 : 0); // 実績があれば最低100%として表示
+                                (($stats['regular_hours'] ?? 0) / $regularVisitHours) * 100 : 
+                                (($stats['regular_hours'] ?? 0) > 0 ? 100 : 0); // 定期訪問実績があれば最低100%として表示
                         } else {
                             // 非訪問月で実績もない場合
                             $contract['remaining_hours'] = 0;
@@ -612,10 +612,10 @@ class DashboardController extends BaseController {
                     $contract['monthly_hours'] = 0;
                 } else {
                     // 毎月契約の場合
-                    // 総役務時間ベースで残り時間と使用率を計算（延長を許可）
-                    $contract['remaining_hours'] = $regularVisitHours - $totalUsedHours;
+                    // 定期訪問時間ベースで使用率を計算
+                    $contract['remaining_hours'] = $regularVisitHours - ($stats['regular_hours'] ?? 0);
                     $contract['usage_percentage'] = $regularVisitHours > 0 ? 
-                        ($totalUsedHours / $regularVisitHours) * 100 : 0;
+                        (($stats['regular_hours'] ?? 0) / $regularVisitHours) * 100 : 0;
                         
                     // 定期役務のみの情報も保持
                     $contract['remaining_regular_hours'] = max(0, $regularVisitHours - ($stats['regular_hours'] ?? 0));
