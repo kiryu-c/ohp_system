@@ -369,9 +369,9 @@
                 <div class="row mt-3">
                     <div class="col-md-3 mb-3">
                         <div class="d-grid">
-                            <a href="<?= base_url('travel_expenses') ?>" class="btn btn-outline-secondary btn-lg">
-                                <i class="fas fa-car fa-2x mb-2 d-block"></i>
-                                交通費管理
+                            <a href="<?= base_url('subsidiary_subjects') ?>" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-list-alt fa-2x mb-2 d-block"></i>
+                                補助科目設定
                             </a>
                         </div>
                     </div>

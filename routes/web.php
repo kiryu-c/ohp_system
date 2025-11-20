@@ -199,4 +199,20 @@ $router->get('/email-logs/detail', ['EmailLogController', 'detail']);
 $router->post('/email-logs/delete', ['EmailLogController', 'delete']);
 $router->post('/email-logs/bulk-delete', ['EmailLogController', 'bulkDelete']);
 
+// ===== 補助科目マスタ =====
+
+// 一覧表示（インライン編集版）
+$router->get('/subsidiary_subjects', ['SubsidiarySubjectController', 'index']);
+
+// Ajax API
+$router->post('/subsidiary_subjects/createAjax', ['SubsidiarySubjectController', 'createAjax']);
+$router->post('/subsidiary_subjects/updateAjax/{id}', ['SubsidiarySubjectController', 'updateAjax']);
+$router->post('/subsidiary_subjects/deleteAjax/{id}', ['SubsidiarySubjectController', 'deleteAjax']);
+$router->post('/subsidiary_subjects/updateOrder', ['SubsidiarySubjectController', 'updateOrder']);
+
+// テスト用ルート（補助科目のルートのすぐ上に追加）
+$router->get('/test-route-123', function() {
+    echo "ルーティングは正常に動作しています";
+    exit;
+});
 ?>

@@ -55,6 +55,60 @@ ALTER TABLE `invoice_settings`
   ADD CONSTRAINT `invoice_settings_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
 COMMIT;
 
+
+--===================================================================
+--
+-- テーブルの構造 `subsidiary_subjects`
+--
+
+CREATE TABLE `subsidiary_subjects` (
+  `id` int(11) NOT NULL,
+  `number` int(11) NOT NULL COMMENT '補助科目番号（数値）',
+  `name` varchar(100) NOT NULL COMMENT '補助科目名称',
+  `is_active` tinyint(1) DEFAULT 1 COMMENT '有効フラグ(1:有効、0:無効)',
+  `created_by` int(11) NOT NULL COMMENT '作成者ユーザーID',
+  `updated_by` int(11) DEFAULT NULL COMMENT '更新者ユーザーID',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp() COMMENT '作成日時',
+  `updated_at` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp() COMMENT '更新日時'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='補助科目マスタ。会計システムで使用する補助科目を管理。';
+
+--
+-- ダンプしたテーブルのインデックス
+--
+
+--
+-- テーブルのインデックス `subsidiary_subjects`
+--
+ALTER TABLE `subsidiary_subjects`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uk_subsidiary_subject_number` (`number`),
+  ADD KEY `idx_subsidiary_subject_name` (`name`),
+  ADD KEY `idx_subsidiary_subject_is_active` (`is_active`),
+  ADD KEY `idx_created_by` (`created_by`),
+  ADD KEY `idx_updated_by` (`updated_by`);
+
+--
+-- ダンプしたテーブルの AUTO_INCREMENT
+--
+
+--
+-- テーブルの AUTO_INCREMENT `subsidiary_subjects`
+--
+ALTER TABLE `subsidiary_subjects`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+
+--
+-- ダンプしたテーブルの制約
+--
+
+--
+-- テーブルの制約 `subsidiary_subjects`
+--
+ALTER TABLE `subsidiary_subjects`
+  ADD CONSTRAINT `subsidiary_subjects_ibfk_1` FOREIGN KEY (`created_by`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `subsidiary_subjects_ibfk_2` FOREIGN KEY (`updated_by`) REFERENCES `users` (`id`);
+COMMIT;
+
 --===================================================================
 
 --
