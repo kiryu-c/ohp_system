@@ -367,30 +367,6 @@ function buildPaginationUrl($page) {
                                                 <i class="fas fa-envelope"></i>
                                             </button>
                                         <?php endif; ?>
-                                        <?php if ($user['id'] != Session::get('user_id')): ?>
-                                            <?php if ($user['is_active']): ?>
-                                                <button class="btn btn-outline-danger" 
-                                                        onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8') ?>')" 
-                                                        title="無効化"
-                                                        aria-label="無効化">
-                                                    <i class="fas fa-user-slash"></i>
-                                                </button>
-                                            <?php else: ?>
-                                                <button class="btn btn-outline-success" 
-                                                        onclick="activateUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8') ?>')" 
-                                                        title="有効化"
-                                                        aria-label="有効化">
-                                                    <i class="fas fa-user-check"></i>
-                                                </button>
-                                            <?php endif; ?>
-                                        <?php else: ?>
-                                            <button class="btn btn-outline-secondary" 
-                                                    disabled 
-                                                    title="自分自身は削除できません"
-                                                    aria-label="操作不可">
-                                                <i class="fas fa-lock"></i>
-                                            </button>
-                                        <?php endif; ?>
                                     </div>
                                 </td>
                         <?php endforeach; ?>
@@ -552,25 +528,6 @@ function buildPaginationUrl($page) {
                                        class="btn btn-outline-primary btn-sm flex-fill">
                                         <i class="fas fa-edit me-1"></i>編集
                                     </a>
-                                    
-                                    <?php if ($user['id'] != Session::get('user_id')): ?>
-                                        <!-- 有効/無効切り替え -->
-                                        <?php if ($user['is_active']): ?>
-                                            <button class="btn btn-outline-danger btn-sm flex-fill" 
-                                                    onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8') ?>')">
-                                                <i class="fas fa-user-slash me-1"></i>無効化
-                                            </button>
-                                        <?php else: ?>
-                                            <button class="btn btn-outline-success btn-sm flex-fill" 
-                                                    onclick="activateUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8') ?>')">
-                                                <i class="fas fa-user-check me-1"></i>有効化
-                                            </button>
-                                        <?php endif; ?>
-                                    <?php else: ?>
-                                        <button class="btn btn-outline-secondary btn-sm flex-fill" disabled>
-                                            <i class="fas fa-lock me-1"></i>操作不可
-                                        </button>
-                                    <?php endif; ?>
                                 </div>
                                 <?php if (!empty($user['email'])): ?>
                                     <!-- ログイン招待メール送信ボタン -->
@@ -1604,58 +1561,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
-// ユーザー削除（無効化）機能
-function deleteUser(id, name) {
-    if (confirm(`ユーザー「${name}」を無効化しますか？\n\n無効化すると、このユーザーはログインできなくなります。`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '<?= base_url('') ?>users/' + id + '/delete';
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = 'csrf_token';
-        csrfToken.value = '<?= csrf_token() ?>';
-        form.appendChild(csrfToken);
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-// ユーザー有効化機能
-function activateUser(id, name) {
-    if (confirm(`ユーザー「${name}」を有効化しますか？`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '<?= base_url('') ?>users/' + id;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = 'csrf_token';
-        csrfToken.value = '<?= csrf_token() ?>';
-        form.appendChild(csrfToken);
-        
-        const isActive = document.createElement('input');
-        isActive.type = 'hidden';
-        isActive.name = 'is_active';
-        isActive.value = '1';
-        form.appendChild(isActive);
-        
-        // 現在の値を保持（簡易的に）
-        const fields = ['login_id', 'name', 'email', 'user_type'];
-        fields.forEach(fieldName => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = fieldName;
-            // この部分は実際の値を設定する必要がありますが、簡易的な実装です
-            form.appendChild(input);
-        });
-        
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
 
 // ログイン招待メール送信機能
 function sendInvitationEmail(id, name) {
