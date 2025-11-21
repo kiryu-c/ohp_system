@@ -99,41 +99,6 @@ function buildCompaniesUrl($page) {
     </select>
 </div>
 
-<!-- 統計情報 -->
-<div class="row mb-4">
-    <div class="col-md-3 col-6">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1"><?= $stats['total_companies'] ?></h3>
-                <p class="mb-0">企業数</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1"><?= $stats['total_branches'] ?></h3>
-                <p class="mb-0">拠点数</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1"><?= $stats['active_branches'] ?></h3>
-                <p class="mb-0">有効拠点</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3 col-6">
-        <div class="card bg-warning text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1"><?= $stats['total_contracts'] ?></h3>
-                <p class="mb-0">契約数</p>
-            </div>
-        </div>
-    </div>
-</div>
 
 <!-- 拠点一覧 -->
 <div class="card">
@@ -773,17 +738,6 @@ function buildCompaniesUrl($page) {
 
 /* モバイル表示（768px未満） */
 @media (max-width: 767px) {
-    /* 統計カードの調整 */
-    .row .col-md-3 {
-        margin-bottom: 0.75rem;
-    }
-    
-    .card.bg-primary,
-    .card.bg-info,
-    .card.bg-success,
-    .card.bg-warning {
-        margin-bottom: 0.5rem;
-    }
     
     /* モバイル拠点カードの調整 */
     .mobile-branch-card .card-body {
@@ -926,10 +880,6 @@ function buildCompaniesUrl($page) {
     border-bottom: 1px solid #dee2e6;
 }
 
-/* 統計カードのスタイル */
-.card.bg-primary, .card.bg-success, .card.bg-warning, .card.bg-info {
-    border: none;
-}
 
 /* アクセシビリティ向上 */
 @media (max-width: 767px) {

@@ -68,8 +68,15 @@ class UserController extends BaseController {
         }
         
         if ($company !== '') {
-            $countSql .= " AND u.company_id = :company_id";
+            // 企業に所属するユーザー + その企業と契約している産業医を表示
+            $countSql .= " AND (u.company_id = :company_id 
+                          OR (u.user_type = 'doctor' AND EXISTS (
+                              SELECT 1 FROM contracts 
+                              WHERE contracts.doctor_id = u.id 
+                              AND contracts.company_id = :company_id2
+                          )))";
             $params['company_id'] = (int)$company;
+            $params['company_id2'] = (int)$company;
         }
         
         // 総件数を取得
@@ -106,7 +113,13 @@ class UserController extends BaseController {
         }
         
         if ($company !== '') {
-            $sql .= " AND u.company_id = :company_id";
+            // 企業に所属するユーザー + その企業と契約している産業医を表示
+            $sql .= " AND (u.company_id = :company_id 
+                      OR (u.user_type = 'doctor' AND EXISTS (
+                          SELECT 1 FROM contracts 
+                          WHERE contracts.doctor_id = u.id 
+                          AND contracts.company_id = :company_id2
+                      )))";
         }
         
         // ★ 並び替えを追加(元のORDER BYを置き換え)

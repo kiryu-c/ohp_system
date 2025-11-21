@@ -124,48 +124,6 @@ function buildPaginationUrl($page) {
     </select>
 </div>
 
-<!-- 統計情報 -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1"><?= $totalCount ?></h3>
-                <p class="mb-0">総ユーザー数</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1">
-                    <?= count(array_filter($users ?? [], function($u) { return $u['user_type'] === 'doctor'; })) ?>
-                </h3>
-                <p class="mb-0">産業医</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1">
-                    <?= count(array_filter($users ?? [], function($u) { return $u['user_type'] === 'company'; })) ?>
-                </h3>
-                <p class="mb-0">企業ユーザー</p>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
-            <div class="card-body text-center">
-                <h3 class="mb-1">
-                    <?= count(array_filter($users ?? [], function($u) { return $u['user_type'] === 'admin'; })) ?>
-                </h3>
-                <p class="mb-0">管理者</p>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- ユーザー一覧 -->
 <div class="card">
     <div class="card-header">

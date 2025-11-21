@@ -111,44 +111,6 @@ class CompanyController extends BaseController {
         // ページネーション情報を計算
         $totalPages = ceil($totalCount / $perPage);
         
-        // 統計情報を計算(全体データから)
-        $statsSql = "SELECT 
-                        COUNT(DISTINCT c.id) as total_companies,
-                        COUNT(DISTINCT b.id) as total_branches,
-                        COUNT(DISTINCT CASE WHEN b.is_active = 1 THEN b.id END) as active_branches,
-                        COALESCE(SUM(
-                            CASE 
-                                WHEN ct.contract_status = 'active' 
-                                AND ct.effective_date <= CURDATE()
-                                AND (ct.effective_end_date IS NULL OR ct.effective_end_date >= CURDATE())
-                                THEN 1 
-                                ELSE 0 
-                            END
-                        ), 0) as total_contracts
-                    FROM companies c
-                    LEFT JOIN branches b ON c.id = b.company_id
-                    LEFT JOIN contracts ct ON b.id = ct.branch_id
-                    WHERE c.is_active = 1";
-        
-        $statsStmt = $db->prepare($statsSql);
-        $statsStmt->execute();
-        $statsResult = $statsStmt->fetch();
-        
-        $stats = [
-            'total_companies' => (int)$statsResult['total_companies'],
-            'total_branches' => (int)$statsResult['total_branches'],
-            'active_branches' => (int)$statsResult['active_branches'],
-            'total_contracts' => (int)$statsResult['total_contracts']
-        ];
-        
-        // 総ユーザー数を取得
-        $userSql = "SELECT COUNT(DISTINCT u.id) as total FROM users u 
-                    JOIN companies c ON u.company_id = c.id 
-                    WHERE u.user_type = 'company' AND u.is_active = true AND c.is_active = true";
-        $userStmt = $db->prepare($userSql);
-        $userStmt->execute();
-        $userResult = $userStmt->fetch();
-        $stats['total_users'] = (int)$userResult['total'];
         
         ob_start();
         include __DIR__ . '/../views/companies/index.php';
