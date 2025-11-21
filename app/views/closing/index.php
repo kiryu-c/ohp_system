@@ -296,7 +296,7 @@ $filterSearch = $_GET['search'] ?? '';
                                                             
                                                             <!-- PDF出力ボタン(確定済みの場合) -->
                                                             <?php if ($closingRecord['status'] === 'finalized' && $closingRecord['invoice_pdf_path']): ?>
-                                                                <a href="<?= h($closingRecord['invoice_pdf_path']) ?>" 
+                                                                <a href="/invoice-download/<?= $closingRecord['id'] ?>" 
                                                                    target="_blank" class="btn btn-outline-danger" title="請求書PDF">
                                                                     <i class="fas fa-file-pdf"></i>
                                                                 </a>

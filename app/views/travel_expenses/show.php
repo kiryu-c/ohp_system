@@ -105,6 +105,23 @@
                                     <td>
                                         <i class="<?= get_transport_type_icon($expense['transport_type']) ?> me-2"></i>
                                         <?= get_transport_type_label($expense['transport_type']) ?>
+                                        <?php if ($expense['transport_type'] === 'taxi'): ?>
+                                            <?php if ($expense['taxi_allowed'] == 1): ?>
+                                                <span class="badge bg-success ms-2">
+                                                    <i class="fas fa-check me-1"></i>利用可
+                                                </span>
+                                            <?php else: ?>
+                                                <span class="badge bg-danger ms-2">
+                                                    <i class="fas fa-times me-1"></i>利用不可
+                                                </span>
+                                                <?php if ($expense['company_notified'] == 1): ?>
+                                                    <br>
+                                                    <small class="text-info mt-1 d-inline-block">
+                                                        <i class="fas fa-info-circle me-1"></i>企業にお伝え済み
+                                                    </small>
+                                                <?php endif; ?>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
                                     </td>
                                 </tr>
                                 <?php if ($expense['trip_type']): ?>
@@ -411,7 +428,26 @@
                     <strong>削除する交通費記録：</strong>
                     <ul class="list-unstyled mt-2">
                         <li><strong>役務日：</strong><?= format_date($expense['service_date']) ?></li>
-                        <li><strong>交通手段：</strong><?= get_transport_type_label($expense['transport_type']) ?></li>
+                        <li>
+                            <strong>交通手段：</strong><?= get_transport_type_label($expense['transport_type']) ?>
+                            <?php if ($expense['transport_type'] === 'taxi'): ?>
+                                <?php if ($expense['taxi_allowed'] == 1): ?>
+                                    <span class="badge bg-success ms-1">
+                                        <i class="fas fa-check me-1"></i>利用可
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge bg-danger ms-1">
+                                        <i class="fas fa-times me-1"></i>利用不可
+                                    </span>
+                                    <?php if ($expense['company_notified'] == 1): ?>
+                                        <br>
+                                        <small class="text-info">
+                                            <i class="fas fa-info-circle me-1"></i>企業にお伝え済み
+                                        </small>
+                                    <?php endif; ?>
+                                <?php endif; ?>
+                            <?php endif; ?>
+                        </li>
                         <li><strong>区間：</strong><?= format_travel_route($expense['departure_point'], $expense['arrival_point']) ?></li>
                         <li><strong>金額：</strong><?= format_amount($expense['amount']) ?></li>
                     </ul>

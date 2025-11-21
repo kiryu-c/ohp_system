@@ -1980,6 +1980,11 @@ function generateTravelExpenseList(expenses) {
                     <i class="fas ${transportIcon} me-1"></i>
                     ${transportLabel}
                     ${tripTypeLabel ? `<div class="small text-muted">${tripTypeLabel}</div>` : ''}
+                    ${expense.transport_type === 'taxi' ? 
+                      (expense.taxi_allowed == 1 ? 
+                        '<div><span class="badge bg-success mt-1"><i class="fas fa-check me-1"></i>利用可</span></div>' : 
+                        '<div><span class="badge bg-danger mt-1"><i class="fas fa-times me-1"></i>利用不可</span></div>' +
+                        (expense.company_notified == 1 ? '<div><small class="text-info"><i class="fas fa-info-circle me-1"></i>企業通知済</small></div>' : '')) : ''}
                 </td>
                 <td>
                     ${expense.departure_point ? `
@@ -2007,8 +2012,9 @@ function generateTravelExpenseList(expenses) {
                 <td class="text-center">
                     <div class="btn-group btn-group-sm">
                         <button class="btn btn-outline-info" 
-                                onclick="showTravelExpenseDetail(${expense.id})" 
-                                title="詳細">
+                                onclick="toggleTravelExpenseDetail(${expense.id})" 
+                                title="詳細"
+                                id="detailBtn_${expense.id}">
                             <i class="fas fa-eye"></i>
                         </button>
                         ${expense.status === 'pending' ? `
@@ -2023,6 +2029,54 @@ function generateTravelExpenseList(expenses) {
                                 <i class="fas fa-times"></i>
                             </button>
                         ` : ''}
+                    </div>
+                </td>
+            </tr>
+            <tr id="detailRow_${expense.id}" style="display: none;">
+                <td colspan="8" class="bg-light">
+                    <div class="p-3">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="fas fa-info-circle me-1"></i>詳細情報</h6>
+                                <table class="table table-sm table-borderless">
+                                    <tr>
+                                        <th width="120">交通手段:</th>
+                                        <td>
+                                            <i class="fas ${transportIcon} me-1"></i>${transportLabel}
+                                            ${expense.transport_type === 'taxi' ? 
+                                              (expense.taxi_allowed == 1 ? 
+                                                '<span class="badge bg-success ms-2"><i class="fas fa-check me-1"></i>利用可</span>' : 
+                                                '<span class="badge bg-danger ms-2"><i class="fas fa-times me-1"></i>利用不可</span>' +
+                                                (expense.company_notified == 1 ? '<br><small class="text-info mt-1 d-inline-block"><i class="fas fa-info-circle me-1"></i>企業にお伝え済み</small>' : '')) : ''}
+                                        </td>
+                                    </tr>
+                                    ${tripTypeLabel ? `<tr><th>往復・片道:</th><td>${tripTypeLabel}</td></tr>` : ''}
+                                    <tr><th>出発地:</th><td>${escapeHtml(expense.departure_point) || '-'}</td></tr>
+                                    <tr><th>到着地:</th><td>${escapeHtml(expense.arrival_point) || '-'}</td></tr>
+                                    <tr><th>金額:</th><td><strong class="text-primary">¥${expense.amount.toLocaleString()}</strong></td></tr>
+                                </table>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="mb-3"><i class="fas fa-clipboard me-1"></i>備考・その他</h6>
+                                <div class="mb-3">
+                                    <strong>備考:</strong><br>
+                                    <div class="bg-white p-2 rounded border">
+                                        ${expense.memo ? escapeHtml(expense.memo) : '<span class="text-muted">記載なし</span>'}
+                                    </div>
+                                </div>
+                                ${expense.receipt_file_path ? 
+                                  '<div class="mb-2">' +
+                                    '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="showReceipt(\'' + escapeHtml(expense.receipt_file_path) + '\', ' + expense.id + ')">' +
+                                      '<i class="fas fa-receipt me-1"></i>レシートを表示' +
+                                    '</button>' +
+                                  '</div>' : ''}
+                                ${expense.admin_comment ? 
+                                  '<div class="alert alert-warning mb-0">' +
+                                    '<strong><i class="fas fa-comment me-1"></i>管理者コメント:</strong><br>' +
+                                    escapeHtml(expense.admin_comment) +
+                                  '</div>' : ''}
+                            </div>
+                        </div>
                     </div>
                 </td>
             </tr>
@@ -2100,13 +2154,22 @@ function showApproveTravelExpenseModal(expenseId) {
                             <div class="row">
                                 <div class="col-md-6">
                                     <strong>役務日:</strong> ${formatDate(expense.service_date)}<br>
-                                    <strong>交通手段:</strong> ${getTransportLabel(expense.transport_type)}<br>
+                                    <strong>交通手段:</strong> ${getTransportLabel(expense.transport_type)}
+                                    ${expense.transport_type === 'taxi' ? 
+                                      (expense.taxi_allowed == 1 ? 
+                                        '<span class="badge bg-success ms-1"><i class="fas fa-check me-1"></i>利用可</span>' : 
+                                        '<span class="badge bg-danger ms-1"><i class="fas fa-times me-1"></i>利用不可</span>' +
+                                        (expense.company_notified == 1 ? '<br><small class="text-info"><i class="fas fa-info-circle me-1"></i>企業にお伝え済み</small>' : '')) : ''}<br>
                                     <strong>区間:</strong> ${expense.departure_point ? `${escapeHtml(expense.departure_point)} → ${escapeHtml(expense.arrival_point)}` : escapeHtml(expense.arrival_point)}
                                 </div>
                                 <div class="col-md-6">
                                     <strong>金額:</strong> ¥${expense.amount.toLocaleString()}<br>
                                     ${expense.trip_type ? `<strong>往復・片道:</strong> ${expense.trip_type === 'round_trip' ? '往復' : '片道'}<br>` : ''}
-                                    ${expense.memo ? `<strong>備考:</strong> ${escapeHtml(expense.memo)}` : ''}
+                                    ${expense.memo ? `<strong>備考:</strong> ${escapeHtml(expense.memo)}<br>` : ''}
+                                    ${expense.receipt_file_path ? 
+                                      '<button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="showReceipt(\'' + escapeHtml(expense.receipt_file_path) + '\', ' + expenseId + ')">' +
+                                        '<i class="fas fa-receipt me-1"></i>レシートを表示' +
+                                      '</button>' : ''}
                                 </div>
                             </div>
                         </div>
@@ -2137,13 +2200,22 @@ function showRejectTravelExpenseModal(expenseId) {
                             <div class="row">
                                 <div class="col-md-6">
                                     <strong>役務日:</strong> ${formatDate(expense.service_date)}<br>
-                                    <strong>交通手段:</strong> ${getTransportLabel(expense.transport_type)}<br>
+                                    <strong>交通手段:</strong> ${getTransportLabel(expense.transport_type)}
+                                    ${expense.transport_type === 'taxi' ? 
+                                      (expense.taxi_allowed == 1 ? 
+                                        '<span class="badge bg-success ms-1"><i class="fas fa-check me-1"></i>利用可</span>' : 
+                                        '<span class="badge bg-danger ms-1"><i class="fas fa-times me-1"></i>利用不可</span>' +
+                                        (expense.company_notified == 1 ? '<br><small class="text-info"><i class="fas fa-info-circle me-1"></i>企業にお伝え済み</small>' : '')) : ''}<br>
                                     <strong>区間:</strong> ${expense.departure_point ? `${escapeHtml(expense.departure_point)} → ${escapeHtml(expense.arrival_point)}` : escapeHtml(expense.arrival_point)}
                                 </div>
                                 <div class="col-md-6">
                                     <strong>金額:</strong> ¥${expense.amount.toLocaleString()}<br>
                                     ${expense.trip_type ? `<strong>往復・片道:</strong> ${expense.trip_type === 'round_trip' ? '往復' : '片道'}<br>` : ''}
-                                    ${expense.memo ? `<strong>備考:</strong> ${escapeHtml(expense.memo)}` : ''}
+                                    ${expense.memo ? `<strong>備考:</strong> ${escapeHtml(expense.memo)}<br>` : ''}
+                                    ${expense.receipt_file_path ? 
+                                      '<button type="button" class="btn btn-sm btn-outline-secondary mt-1" onclick="showReceipt(\'' + escapeHtml(expense.receipt_file_path) + '\', ' + expenseId + ')">' +
+                                        '<i class="fas fa-receipt me-1"></i>レシートを表示' +
+                                      '</button>' : ''}
                                 </div>
                             </div>
                         </div>
@@ -2159,10 +2231,26 @@ function showRejectTravelExpenseModal(expenseId) {
         });
 }
 
-// 交通費詳細表示（既存の関数を流用）
-function showTravelExpenseDetail(expenseId) {
-    // 詳細モーダルまたは詳細ページへの遷移
-    window.open(`<?= base_url('travel_expenses/') ?>${expenseId}`, '_blank');
+// 交通費詳細の表示切替（テーブル内展開）
+function toggleTravelExpenseDetail(expenseId) {
+    const detailRow = document.getElementById(`detailRow_${expenseId}`);
+    const detailBtn = document.getElementById(`detailBtn_${expenseId}`);
+    
+    if (detailRow.style.display === 'none') {
+        // 詳細行を表示
+        detailRow.style.display = 'table-row';
+        detailBtn.classList.remove('btn-outline-info');
+        detailBtn.classList.add('btn-info', 'text-white');
+        detailBtn.innerHTML = '<i class="fas fa-eye-slash"></i>';
+        detailBtn.title = '詳細を閉じる';
+    } else {
+        // 詳細行を非表示
+        detailRow.style.display = 'none';
+        detailBtn.classList.remove('btn-info', 'text-white');
+        detailBtn.classList.add('btn-outline-info');
+        detailBtn.innerHTML = '<i class="fas fa-eye"></i>';
+        detailBtn.title = '詳細';
+    }
 }
 
 // ユーティリティ関数
@@ -2208,6 +2296,15 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// レシート表示
+function showReceipt(receiptPath, expenseId) {
+    // レシートファイルのURLを生成
+    const receiptUrl = `<?= base_url('') ?>${receiptPath}`;
+    
+    // 新しいウィンドウでレシートを表示
+    window.open(receiptUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
 }
 
 // 時間フォーマット関数

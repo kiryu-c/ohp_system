@@ -1239,9 +1239,16 @@ function showTravelExpenseDetail(expenseId) {
                                     ${expense.transport_type === 'taxi' ? 
                                       (expense.taxi_allowed == 1 ? 
                                         '<br><small class="text-success"><i class="fas fa-check me-1"></i>タクシー利用許可済み</small>' : 
-                                        '<br><small class="text-danger"><i class="fas fa-times me-1"></i>タクシー利用未許可</small>') : ''}
+                                        '<br><small class="text-danger"><i class="fas fa-times me-1"></i>タクシー利用未許可</small>' +
+                                        (expense.company_notified == 1 ? '<br><small class="text-info"><i class="fas fa-info-circle me-1"></i>企業にお伝え済み</small>' : '')) : ''}
                                 </td></tr>
                                 <tr><th>金額</th><td><strong class="text-primary">¥${(expense.amount || 0).toLocaleString()}</strong></td></tr>
+                                ${expense.receipt_file_path ? 
+                                  '<tr><th>レシート</th><td>' +
+                                    '<button type="button" class="btn btn-sm btn-outline-secondary" onclick="showReceipt(\'' + escapeHtml(expense.receipt_file_path) + '\', ' + expenseId + ')">' +
+                                      '<i class="fas fa-receipt me-1"></i>レシートを表示' +
+                                    '</button>' +
+                                  '</td></tr>' : ''}
                             </table>
                         </div>
                         <div class="col-md-6">
@@ -1310,6 +1317,15 @@ function showRejectTravelExpenseModal(expenseId, doctorName) {
     
     const modal = new bootstrap.Modal(document.getElementById('rejectTravelExpenseModal'));
     modal.show();
+}
+
+// レシート表示
+function showReceipt(receiptPath, expenseId) {
+    // レシートファイルのURLを生成
+    const receiptUrl = `<?= base_url('') ?>${receiptPath}`;
+    
+    // 新しいウィンドウでレシートを表示
+    window.open(receiptUrl, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
 }
 
 // ユーティリティ関数
