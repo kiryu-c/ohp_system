@@ -657,9 +657,12 @@ option:disabled {
 </style>
 
 <script>
+// グローバルスコープで変数を宣言
+let transportTypeSelect;
+
 document.addEventListener('DOMContentLoaded', function() {
     // 元の交通手段選択時の処理
-    const transportTypeSelect = document.getElementById('transport_type');
+    transportTypeSelect = document.getElementById('transport_type');
     const amountInput = document.getElementById('amount');
     const departureInput = document.getElementById('departure_point');
     const memoTextarea = document.getElementById('memo');
@@ -1101,12 +1104,11 @@ document.addEventListener('DOMContentLoaded', function() {
             showMessage('システムエラーが発生しました。', 'error');
         });
     }
-});
-
-// ページ読み込み時に初期状態を設定
-document.addEventListener('DOMContentLoaded', function() {
-    // 初期の交通手段に応じて表示を調整
-    transportTypeSelect.dispatchEvent(new Event('change'));
+    
+    // ページ読み込み時に初期状態を設定（初期の交通手段に応じて表示を調整）
+    if (transportTypeSelect) {
+        transportTypeSelect.dispatchEvent(new Event('change'));
+    }
 });
 
 // メッセージ表示関数

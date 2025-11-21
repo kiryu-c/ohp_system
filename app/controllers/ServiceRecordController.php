@@ -143,13 +143,14 @@ class ServiceRecordController extends BaseController {
             require_once __DIR__ . '/../core/Database.php';
             $db = Database::getInstance()->getConnection();
             
-            // 総件数取得用のSQL(既存のまま)
+            // 総件数取得用のSQL(有効な契約のみ表示)
             $countSql = "SELECT COUNT(*) as total
                         FROM service_records sr
                         JOIN contracts co ON sr.contract_id = co.id
                         JOIN branches b ON co.branch_id = b.id
                         JOIN companies c ON co.company_id = c.id
-                        WHERE sr.doctor_id = :doctor_id";
+                        WHERE sr.doctor_id = :doctor_id
+                        AND co.contract_status = 'active'";
             
             $params = ['doctor_id' => $doctorId];
             
@@ -201,13 +202,14 @@ class ServiceRecordController extends BaseController {
             // ページネーション情報を計算
             $paginationInfo = $this->calculatePagination($totalRecords, $pagination['page'], $pagination['per_page']);
             
-            // データ取得用のSQL(並び替え対応版)
+            // データ取得用のSQL(並び替え対応版、有効な契約のみ表示)
             $recordsSql = "SELECT sr.*, c.name as company_name, b.name as branch_name, co.regular_visit_hours
                         FROM service_records sr
                         JOIN contracts co ON sr.contract_id = co.id
                         JOIN branches b ON co.branch_id = b.id
                         JOIN companies c ON co.company_id = c.id
-                        WHERE sr.doctor_id = :doctor_id";
+                        WHERE sr.doctor_id = :doctor_id
+                        AND co.contract_status = 'active'";
             
             // 同じフィルター条件を適用
             if (!empty($yearMonth)) {
@@ -479,14 +481,15 @@ class ServiceRecordController extends BaseController {
                 $contractVersions = $versionStmt->fetchAll(PDO::FETCH_COLUMN);
             }
             
-            // ===== 総件数取得 =====
+            // ===== 総件数取得(有効な契約のみ表示) =====
             $countSql = "SELECT COUNT(*) as total
                         FROM service_records sr
                         JOIN contracts co ON sr.contract_id = co.id
                         JOIN branches b ON co.branch_id = b.id
                         JOIN users u ON sr.doctor_id = u.id
                         WHERE co.company_id = ?
-                        AND co.branch_id IN ({$safeBranchIds})";
+                        AND co.branch_id IN ({$safeBranchIds})
+                        AND co.contract_status = 'active'";
             
             $countParams = [$companyId];
             
@@ -539,7 +542,8 @@ class ServiceRecordController extends BaseController {
                     JOIN branches b ON co.branch_id = b.id
                     JOIN users u ON sr.doctor_id = u.id
                     WHERE co.company_id = ?
-                    AND co.branch_id IN ({$safeBranchIds})";
+                    AND co.branch_id IN ({$safeBranchIds})
+                    AND co.contract_status = 'active'";
             
             $dataParams = [$companyId];
             
@@ -3632,8 +3636,7 @@ class ServiceRecordController extends BaseController {
                           AND MONTH(sr.service_date) = :month";
         }
         
-        $countSql .= " WHERE co.contract_status = 'active'
-                    AND co.effective_date <= :target_month_end
+        $countSql .= " WHERE co.effective_date <= :target_month_end
                     AND (co.effective_end_date IS NULL OR co.effective_end_date >= :target_date)";
         
         $countParams = [
@@ -3740,9 +3743,8 @@ class ServiceRecordController extends BaseController {
                         LEFT JOIN monthly_closing_records mcr ON co.id = mcr.contract_id 
                             AND mcr.closing_period = :closing_period";
         
-        // 契約の有効性条件を追加(開始前・終了後の契約を除外)
-        $summariesSql .= " WHERE co.contract_status = 'active'
-                        AND co.effective_date <= :target_month_end
+        // 契約の有効性条件を追加(開始前・終了後の契約を除外、ステータス制限なし)
+        $summariesSql .= " WHERE co.effective_date <= :target_month_end
                         AND (co.effective_end_date IS NULL OR co.effective_end_date >= :target_date)";
         
         // 検索条件
@@ -4446,7 +4448,7 @@ class ServiceRecordController extends BaseController {
             require_once __DIR__ . '/../core/Database.php';
             $db = Database::getInstance()->getConnection();
             
-            // 選択した年月に反映日が該当する契約を取得
+            // 選択した年月に反映日が該当する契約を取得(有効な契約のみ)
             $sql = "SELECT DISTINCT co.id as contract_id, 
                            c.name as company_name, 
                            b.name as branch_name

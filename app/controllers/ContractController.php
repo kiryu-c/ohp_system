@@ -55,11 +55,11 @@ class ContractController extends BaseController {
             
             // フィルター処理
             $search = trim($_GET['search'] ?? '');
-            $status = trim($_GET['status'] ?? '');
+            $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
             $year = trim($_GET['year'] ?? '');
             $frequency = trim($_GET['frequency'] ?? '');
             $taxType = trim($_GET['tax_type'] ?? '');
-            $showExpired = isset($_GET['show_expired']) ? (bool)$_GET['show_expired'] : false;
+            
             
             require_once __DIR__ . '/../core/Database.php';
             $db = Database::getInstance()->getConnection();
@@ -72,14 +72,15 @@ class ContractController extends BaseController {
             
             $params = ['doctor_id' => $doctorId];
 
-            // 反映日による表示制御（現在の日付が反映日～反映終了日の範囲内の契約のみ）
-            $baseSql .= " AND co.effective_date <= CURDATE()";
-            $baseSql .= " AND (co.effective_end_date IS NULL OR co.effective_end_date >= CURDATE())";
+            // 反映日による表示制御
+            // 通常: 現在の日付が反映日～反映終了日の範囲内の契約
+            // 例外: 契約開始日=反映日かつ未来日の契約も表示（未来契約）
+            $baseSql .= " AND (
+                (co.effective_date <= CURDATE() AND (co.effective_end_date IS NULL OR co.effective_end_date >= CURDATE()))
+                OR (co.start_date = co.effective_date AND co.start_date > CURDATE())
+            )";
 
-            // 期限切れ契約の表示制御
-            if (!$showExpired) {
-                $baseSql .= " AND (co.end_date IS NULL OR co.end_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))";
-            }
+
             
             // フィルター条件
             if (!empty($search)) {
@@ -88,9 +89,28 @@ class ContractController extends BaseController {
                 $params['search2'] = "%{$search}%";
             }
             
-            if (!empty($status)) {
-                $baseSql .= " AND co.contract_status = :status";
-                $params['status'] = $status;
+            // 産業医は常に無効な契約を表示しない
+            $baseSql .= " AND co.contract_status != 'inactive'";
+            
+            // ステータスフィルター(複数選択対応)
+            if (!empty($statusArray)) {
+                $statusConditions = [];
+                
+                foreach ($statusArray as $index => $status) {
+                    if ($status === 'expired') {
+                        // 期間終了: 契約終了日が過去日の契約
+                        $statusConditions[] = "(co.end_date IS NOT NULL AND co.end_date < CURDATE())";
+                    } elseif ($status === 'active') {
+                        // 有効: contract_statusがactiveで、かつ契約終了日が未来またはNULL
+                        $paramKey = "status_{$index}";
+                        $statusConditions[] = "(co.contract_status = :{$paramKey} AND (co.end_date IS NULL OR co.end_date >= CURDATE()))";
+                        $params[$paramKey] = $status;
+                    }
+                }
+                
+                if (!empty($statusConditions)) {
+                    $baseSql .= " AND (" . implode(' OR ', $statusConditions) . ")";
+                }
             }
             
             if (!empty($year)) {
@@ -141,7 +161,11 @@ class ContractController extends BaseController {
                     CASE 
                         WHEN co.end_date IS NOT NULL AND co.end_date < CURDATE() THEN 1 
                         ELSE 0 
-                    END as is_expired
+                    END as is_expired,
+                    CASE 
+                        WHEN co.start_date = co.effective_date AND co.start_date > CURDATE() THEN 1 
+                        ELSE 0 
+                    END as is_future_contract
                     " . $baseSql . "
                     ORDER BY 
                         CASE WHEN co.end_date IS NOT NULL AND co.end_date < CURDATE() THEN 1 ELSE 0 END,
@@ -164,7 +188,7 @@ class ContractController extends BaseController {
             $currentYear = date('Y');
             
             foreach ($contracts as &$contract) {
-                // 契約終了判定
+                // 契約無効化判定
                 $isContractExpired = !empty($contract['end_date']) && strtotime($contract['end_date']) < strtotime('today');
                 $contract['is_contract_expired'] = $isContractExpired;
                 
@@ -319,10 +343,10 @@ class ContractController extends BaseController {
             
             // フィルター処理
             $search = trim($_GET['search'] ?? '');
-            $status = trim($_GET['status'] ?? '');
+            $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
             $year = trim($_GET['year'] ?? '');
             $frequency = trim($_GET['frequency'] ?? ''); // 訪問頻度フィルターを追加
-            $showExpired = isset($_GET['show_expired']) ? (bool)$_GET['show_expired'] : false;
+            
             
             require_once __DIR__ . '/../core/Database.php';
             $db = Database::getInstance()->getConnection();
@@ -341,14 +365,15 @@ class ContractController extends BaseController {
                 'user_id' => $userId
             ];
             
-            // 反映日による表示制御（現在の日付が反映日～反映終了日の範囲内の契約のみ）
-            $baseSql .= " AND co.effective_date <= CURDATE()";
-            $baseSql .= " AND (co.effective_end_date IS NULL OR co.effective_end_date >= CURDATE())";
+            // 反映日による表示制御
+            // 通常: 現在の日付が反映日～反映終了日の範囲内の契約
+            // 例外: 契約開始日=反映日かつ未来日の契約も表示（未来契約）
+            $baseSql .= " AND (
+                (co.effective_date <= CURDATE() AND (co.effective_end_date IS NULL OR co.effective_end_date >= CURDATE()))
+                OR (co.start_date = co.effective_date AND co.start_date > CURDATE())
+            )";
 
             // 期限切れ契約の表示制御
-            if (!$showExpired) {
-                $baseSql .= " AND (co.end_date IS NULL OR co.end_date >= DATE_FORMAT(CURDATE() - INTERVAL 1 MONTH, '%Y-%m-01'))";
-            }
             
             // フィルター条件
             if (!empty($search)) {
@@ -357,9 +382,28 @@ class ContractController extends BaseController {
                 $params['search2'] = "%{$search}%";
             }
             
-            if (!empty($status)) {
-                $baseSql .= " AND co.contract_status = :status";
-                $params['status'] = $status;
+            // 企業は常に無効な契約を表示しない
+            $baseSql .= " AND co.contract_status != 'inactive'";
+            
+            // ステータスフィルター(複数選択対応)
+            if (!empty($statusArray)) {
+                $statusConditions = [];
+                
+                foreach ($statusArray as $index => $status) {
+                    if ($status === 'expired') {
+                        // 期間終了: 契約終了日が過去日の契約
+                        $statusConditions[] = "(co.end_date IS NOT NULL AND co.end_date < CURDATE())";
+                    } elseif ($status === 'active') {
+                        // 有効: contract_statusがactiveで、かつ契約終了日が未来またはNULL
+                        $paramKey = "status_{$index}";
+                        $statusConditions[] = "(co.contract_status = :{$paramKey} AND (co.end_date IS NULL OR co.end_date >= CURDATE()))";
+                        $params[$paramKey] = $status;
+                    }
+                }
+                
+                if (!empty($statusConditions)) {
+                    $baseSql .= " AND (" . implode(' OR ', $statusConditions) . ")";
+                }
             }
             
             if (!empty($year)) {
@@ -458,9 +502,13 @@ class ContractController extends BaseController {
             $currentYear = date('Y');
             
             foreach ($contracts as &$contract) {
-                // 契約終了判定
+                // 契約無効化判定
                 $isContractExpired = !empty($contract['end_date']) && strtotime($contract['end_date']) < strtotime('today');
                 $contract['is_contract_expired'] = $isContractExpired;
+                
+                // 未来契約判定（契約開始日が未来日）
+                $isFutureContract = !empty($contract['start_date']) && strtotime($contract['start_date']) > strtotime('today');
+                $contract['is_future_contract'] = $isFutureContract;
                 
                 // 訪問頻度情報を追加
                 $contract['visit_frequency_info'] = get_visit_frequency_info($contract['visit_frequency'] ?? 'monthly');
@@ -622,11 +670,11 @@ class ContractController extends BaseController {
 
         // 検索パラメータを取得
         $search = trim($_GET['search'] ?? '');
-        $status = trim($_GET['status'] ?? '');
+        $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
         $frequency = trim($_GET['frequency'] ?? '');
         $taxType = trim($_GET['tax_type'] ?? '');
         $year = trim($_GET['year'] ?? '');
-        $showExpired = isset($_GET['show_expired']) ? (bool)$_GET['show_expired'] : false;
+        
 
         // 並び替えパラメータの取得と検証
         $sortColumn = $_GET['sort'] ?? 'company_name';
@@ -665,10 +713,6 @@ class ContractController extends BaseController {
 
         $params = [];
 
-        // 期限切れ契約の表示制御
-        if (!$showExpired) {
-            $baseSql .= " AND (c.end_date IS NULL OR c.end_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))";
-        }
 
         // 検索条件
         if ($search !== '') {
@@ -678,10 +722,30 @@ class ContractController extends BaseController {
             $params['search3'] = "%{$search}%";
         }
 
-        // ステータスフィルター
-        if ($status !== '') {
-            $baseSql .= " AND c.contract_status = :status";
-            $params['status'] = $status;
+        // ステータスフィルター(複数選択対応)
+        if (!empty($statusArray)) {
+            $statusConditions = [];
+            
+            foreach ($statusArray as $index => $status) {
+                if ($status === 'expired') {
+                    // 期間終了: 契約終了日が過去日の契約
+                    $statusConditions[] = "(c.end_date IS NOT NULL AND c.end_date < CURDATE())";
+                } elseif ($status === 'active') {
+                    // 有効: contract_statusがactiveで、かつ契約終了日が未来またはNULL
+                    $paramKey = "status_{$index}";
+                    $statusConditions[] = "(c.contract_status = :{$paramKey} AND (c.end_date IS NULL OR c.end_date >= CURDATE()))";
+                    $params[$paramKey] = $status;
+                } elseif ($status === 'inactive') {
+                    // 無効: contract_statusがinactiveで、かつ契約終了日が未来またはNULL
+                    $paramKey = "status_{$index}";
+                    $statusConditions[] = "(c.contract_status = :{$paramKey} AND (c.end_date IS NULL OR c.end_date >= CURDATE()))";
+                    $params[$paramKey] = $status;
+                }
+            }
+            
+            if (!empty($statusConditions)) {
+                $baseSql .= " AND (" . implode(' OR ', $statusConditions) . ")";
+            }
         }
 
         // 訪問頻度フィルター
@@ -755,7 +819,7 @@ class ContractController extends BaseController {
 
         // 各契約に訪問頻度情報とタクシー可否情報、請求方法情報を追加
         foreach ($contracts as &$contract) {
-            // 契約終了判定
+            // 契約無効化判定
             $isContractExpired = !empty($contract['end_date']) && strtotime($contract['end_date']) < strtotime('today');
             $contract['is_contract_expired'] = $isContractExpired;
             
@@ -1344,7 +1408,7 @@ class ContractController extends BaseController {
             if (!empty($endDate)) {
                 $endDateObj = new DateTime($endDate);
                 if ($effectiveDateObj >= $endDateObj) {
-                    $errors[] = '反映日は契約終了日より前を指定してください。';
+                    $errors[] = '反映日は契約無効化日より前を指定してください。';
                 }
             }
         }
@@ -2090,7 +2154,7 @@ EOD;
     }
 
     /**
-     * 契約終了処理（Ajax対応）
+     * 契約無効化処理（Ajax対応）
      */
     public function terminate($id) {
         // Ajax リクエストかどうかをチェック
@@ -2147,9 +2211,9 @@ EOD;
                 }
             }
             
-            // 既に終了済みかチェック
-            if ($contract['contract_status'] === 'terminated') {
-                $error = 'この契約は既に終了済みです。';
+            // 既に無効かチェック
+            if ($contract['contract_status'] === 'inactive') {
+                $error = 'この契約は既に無効です。';
                 if ($isAjax) {
                     echo json_encode(['success' => false, 'message' => $error]);
                     return;
@@ -2175,7 +2239,7 @@ EOD;
             $activeCount = $stmt->fetchColumn();
             
             if ($activeCount > 0) {
-                $error = 'この契約には進行中の役務記録があるため終了できません。先に役務を終了してください。';
+                $error = 'この契約には進行中の役務記録があるため無効化できません。先に役務を終了してください。';
                 if ($isAjax) {
                     echo json_encode(['success' => false, 'message' => $error]);
                     return;
@@ -2186,9 +2250,9 @@ EOD;
                 }
             }
             
-            // 契約終了処理
+            // 契約無効化処理
             $updateData = [
-                'contract_status' => 'terminated',
+                'contract_status' => 'inactive',
                 'terminated_at' => date('Y-m-d H:i:s'),
                 'terminated_by' => Session::get('user_id'),
                 'updated_at' => date('Y-m-d H:i:s')
@@ -2203,7 +2267,7 @@ EOD;
                     'terminated_by' => Session::get('user_id')
                 ]);
                 
-                $successMessage = '契約を正常に終了しました。';
+                $successMessage = '契約を正常に無効化しました。';
                 
                 if ($isAjax) {
                     echo json_encode([
@@ -2218,7 +2282,7 @@ EOD;
                     return;
                 }
             } else {
-                $error = '契約終了処理に失敗しました。';
+                $error = '契約無効化処理に失敗しました。';
                 if ($isAjax) {
                     echo json_encode(['success' => false, 'message' => $error]);
                     return;

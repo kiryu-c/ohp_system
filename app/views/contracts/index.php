@@ -23,14 +23,29 @@
                        value="<?= htmlspecialchars($_GET['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
                        placeholder="産業医名/企業名/拠点名で検索">
             </div>
-            <div class="col-md-2">
-                <label for="status" class="form-label">ステータス</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="">全て</option>
-                    <option value="active" <?= ($_GET['status'] ?? '') === 'active' ? 'selected' : '' ?>>有効</option>
-                    <option value="inactive" <?= ($_GET['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>無効</option>
-                    <option value="terminated" <?= ($_GET['status'] ?? '') === 'terminated' ? 'selected' : '' ?>>終了</option>
-                </select>
+            <div class="col-md-3">
+                <label class="form-label">ステータス</label>
+                <?php
+                // デフォルト値の設定: GETパラメータがない場合は['active']
+                $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
+                ?>
+                <div class="d-flex gap-3 mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="active" id="status_active"
+                               <?= in_array('active', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_active">有効</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="inactive" id="status_inactive"
+                               <?= in_array('inactive', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_inactive">無効</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="expired" id="status_expired"
+                               <?= in_array('expired', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_expired">期間終了</label>
+                    </div>
+                </div>
             </div>
             <div class="col-md-2">
                 <label for="frequency" class="form-label">訪問頻度</label>
@@ -59,16 +74,7 @@
                     <?php endfor; ?>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label for="show_expired" class="form-label">期限切れ契約</label>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="show_expired" name="show_expired" value="1" 
-                           <?= isset($_GET['show_expired']) && $_GET['show_expired'] ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="show_expired">
-                        期限切れ契約も表示
-                    </label>
-                </div>
-            </div>
+
             <div class="col-md-1">
                 <label class="form-label">&nbsp;</label>
                 <button type="submit" class="btn btn-outline-primary d-block w-100">
@@ -132,7 +138,13 @@
                     <!-- 既存のGETパラメータを維持 -->
                     <?php foreach ($_GET as $key => $value): ?>
                         <?php if (!in_array($key, ['page', 'per_page'])): ?>
-                            <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>">
+                            <?php if (is_array($value)): ?>
+                                <?php foreach ($value as $v): ?>
+                                    <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>[]" value="<?= htmlspecialchars($v, ENT_QUOTES, 'UTF-8') ?>">
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>">
+                            <?php endif; ?>
                         <?php endif; ?>
                     <?php endforeach; ?>
                     
@@ -150,9 +162,6 @@
                 <small class="text-muted">
                     <?= number_format(($pagination['current_page'] - 1) * $pagination['per_page'] + 1) ?>-<?= number_format(min($pagination['current_page'] * $pagination['per_page'], $pagination['total_count'])) ?>件 / 
                     全<?= number_format($pagination['total_count']) ?>件
-                    <?php if (isset($_GET['show_expired']) && $_GET['show_expired']): ?>
-                        <span class="badge bg-warning ms-2">期限切れ含む</span>
-                    <?php endif; ?>
                 </small>
             </div>
         </div>
@@ -171,9 +180,6 @@
                 <?php else: ?>
                     <span class="badge bg-primary"><?= count($contracts) ?>件</span>
                 <?php endif; ?>
-            <?php endif; ?>
-            <?php if (isset($_GET['show_expired']) && $_GET['show_expired']): ?>
-                <span class="badge bg-warning">期限切れ含む</span>
             <?php endif; ?>
         </h5>
     </div>
@@ -512,7 +518,6 @@
                                             switch($contract['contract_status']) {
                                                 case 'active': echo 'success'; break;
                                                 case 'inactive': echo 'warning'; break;
-                                                case 'terminated': echo 'danger'; break;
                                                 default: echo 'secondary';
                                             }
                                         }
@@ -573,13 +578,6 @@
                                                     onclick="terminateContract(<?= $contract['id'] ?>)"
                                                     title="契約終了">
                                                 <i class="fas fa-stop"></i>
-                                            </button>
-                                        <?php elseif ($contract['contract_status'] === 'terminated'): ?>
-                                            <button type="button" 
-                                                    class="btn btn-outline-success <?= $isContractExpired ? 'opacity-75' : '' ?>" 
-                                                    onclick="activateContract(<?= $contract['id'] ?>)"
-                                                    title="契約再開">
-                                                <i class="fas fa-play"></i>
                                             </button>
                                         <?php endif; ?>
                                     </div>
@@ -670,7 +668,6 @@
                                             switch($contract['contract_status']) {
                                                 case 'active': echo 'success'; break;
                                                 case 'inactive': echo 'warning'; break;
-                                                case 'terminated': echo 'danger'; break;
                                                 default: echo 'secondary';
                                             }
                                         }
@@ -875,12 +872,6 @@
                                             onclick="terminateContract(<?= $contract['id'] ?>)">
                                         <i class="fas fa-stop me-1"></i>終了
                                     </button>
-                                <?php elseif ($contract['contract_status'] === 'terminated'): ?>
-                                    <button type="button" 
-                                            class="btn btn-outline-success btn-sm" 
-                                            onclick="activateContract(<?= $contract['id'] ?>)">
-                                        <i class="fas fa-play me-1"></i>再開
-                                    </button>
                                 <?php endif; ?>
                             </div>
                         </div>
@@ -896,11 +887,6 @@
                     <strong>表示について：</strong>
                     グレー表示の契約は開始前または終了後です。
                     隔月契約で薄いグレーは非訪問月です。
-                    <?php if (isset($_GET['show_expired']) && $_GET['show_expired']): ?>
-                        期限切れ契約は暗いグレーで表示されます。
-                    <?php else: ?>
-                        期限切れ契約は非表示です。「期限切れ契約も表示」をチェックすると表示されます。
-                    <?php endif; ?>
                 </small>
             </div>
             
@@ -1709,13 +1695,7 @@ function showContractDetails(contractId) {
                     ${contract.contract_status === 'active' && !isContractExpired ? 
                         `<button type="button" class="btn btn-outline-danger" onclick="terminateContract(${contract.id})">
                             <i class="fas fa-stop me-1"></i>契約終了
-                        </button>` :
-                        (contract.contract_status === 'terminated' ? 
-                            `<button type="button" class="btn btn-outline-success" onclick="activateContract(${contract.id})">
-                                <i class="fas fa-play me-1"></i>契約再開
-                            </button>` : 
-                            ''
-                        )
+                        </button>` : ''
                     }
                 </div>
             `;
@@ -1803,7 +1783,6 @@ function getStatusClass(status) {
     const classes = {
         'active': 'success',
         'inactive': 'warning',
-        'terminated': 'danger'
     };
     return classes[status] || 'secondary';
 }
@@ -1812,7 +1791,6 @@ function getStatusLabel(status) {
     const labels = {
         'active': '有効',
         'inactive': '無効',
-        'terminated': '終了'
     };
     return labels[status] || status;
 }
@@ -1849,27 +1827,23 @@ function getFrequencyInfo(frequency) {
 
 // 初期化処理
 document.addEventListener('DOMContentLoaded', function() {
-    // フィルター自動送信
-    const filterSelects = document.querySelectorAll('#status, #frequency, #tax_type, #year');
+    // フィルター自動送信(selectボックス)
+    const filterSelects = document.querySelectorAll('#frequency, #tax_type, #year');
     filterSelects.forEach(select => {
         select.addEventListener('change', function() {
             this.form.submit();
         });
     });
     
-    // 期限切れ契約チェックボックスの説明ツールチップ
-    const expiredCheckbox = document.getElementById('show_expired');
-    if (expiredCheckbox) {
-        expiredCheckbox.setAttribute('title', '契約終了日が今月1日より前の契約も一覧に表示します');
-        new bootstrap.Tooltip(expiredCheckbox);
-    }
-    
-    // チェックボックス変更時の自動送信
-    expiredCheckbox?.addEventListener('change', function() {
-        this.form.submit();
+    // ステータスチェックボックスの自動送信
+    const statusCheckboxes = document.querySelectorAll('input[name="status[]"]');
+    statusCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', function() {
+            this.form.submit();
+        });
     });
     
-    // 表示件数変更時の自動送信（ページネーション設定エリアのセレクトボックス）
+    // 表示件数変更時の自動送信(ページネーション設定エリアのセレクトボックス)
     const contractsPageSizeSelect = document.getElementById('contractsPageSize');
     if (contractsPageSizeSelect) {
         contractsPageSizeSelect.addEventListener('change', function() {

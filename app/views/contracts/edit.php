@@ -19,7 +19,6 @@
                         switch($contract['contract_status']) {
                             case 'active': echo 'success'; break;
                             case 'inactive': echo 'warning'; break;
-                            case 'terminated': echo 'danger'; break;
                             default: echo 'secondary';
                         }
                     ?>">
@@ -575,7 +574,6 @@
                             <select class="form-select" id="contract_status" name="contract_status" required>
                                 <option value="active" <?= ($contract['contract_status'] === 'active') ? 'selected' : '' ?>>有効</option>
                                 <option value="inactive" <?= ($contract['contract_status'] === 'inactive') ? 'selected' : '' ?>>無効</option>
-                                <option value="terminated" <?= ($contract['contract_status'] === 'terminated') ? 'selected' : '' ?>>終了</option>
                             </select>
                             <div class="form-text">契約の現在の状態を選択してください</div>
                         </div>
@@ -882,12 +880,7 @@
                         </div>
                     </div>
                     
-                    <?php if ($contract['contract_status'] === 'terminated'): ?>
-                        <div class="alert alert-danger">
-                            <h6><i class="fas fa-exclamation-triangle me-2"></i>この契約は終了しています</h6>
-                            <p class="mb-0">終了した契約では新しい役務記録を作成できません。必要に応じて契約を再開してください。</p>
-                        </div>
-                    <?php elseif ($contract['contract_status'] === 'inactive'): ?>
+                    <?php if ($contract['contract_status'] === 'inactive'): ?>
                         <div class="alert alert-warning">
                             <h6><i class="fas fa-pause me-2"></i>この契約は無効です</h6>
                             <p class="mb-0">無効な契約では新しい役務記録を作成できません。</p>
@@ -899,12 +892,7 @@
                             <?php if ($contract['contract_status'] === 'active'): ?>
                                 <button type="button" class="btn btn-danger" 
                                         onclick="terminateContract(<?= $contract['id'] ?>)">
-                                    <i class="fas fa-stop me-1"></i>契約を終了
-                                </button>
-                            <?php elseif ($contract['contract_status'] === 'terminated'): ?>
-                                <button type="button" class="btn btn-success" 
-                                        onclick="reactivateContract()">
-                                    <i class="fas fa-play me-1"></i>契約を再開
+                                    <i class="fas fa-stop me-1"></i>契約を無効化
                                 </button>
                             <?php endif; ?>
                         </div>
@@ -1272,8 +1260,8 @@ function removeFile() {
 }
 
 function terminateContract(id) {
-    if (confirm('契約を終了しますか?\n\n終了後は新しい役務記録を作成できなくなります。')) {
-        document.getElementById('contract_status').value = 'terminated';
+    if (confirm('契約を無効化しますか?\n\n無効化後は新しい役務記録を作成できなくなります。')) {
+        document.getElementById('contract_status').value = 'inactive';
         if (!document.getElementById('end_date').value) {
             document.getElementById('end_date').value = new Date().toISOString().split('T')[0];
         }

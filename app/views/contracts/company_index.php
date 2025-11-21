@@ -18,14 +18,24 @@
                        value="<?= htmlspecialchars($_GET['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
                        placeholder="産業医名/拠点名で検索">
             </div>
-            <div class="col-lg-2 col-md-6">
-                <label for="status" class="form-label">ステータス</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="">全て</option>
-                    <option value="active" <?= ($_GET['status'] ?? '') === 'active' ? 'selected' : '' ?>>有効</option>
-                    <option value="inactive" <?= ($_GET['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>無効</option>
-                    <option value="terminated" <?= ($_GET['status'] ?? '') === 'terminated' ? 'selected' : '' ?>>終了</option>
-                </select>
+            <div class="col-lg-3 col-md-6">
+                <label class="form-label">ステータス</label>
+                <?php
+                // デフォルト値の設定: GETパラメータがない場合は['active']
+                $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
+                ?>
+                <div class="d-flex gap-3 mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="active" id="status_active"
+                               <?= in_array('active', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_active">有効</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="expired" id="status_expired"
+                               <?= in_array('expired', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_expired">期間終了</label>
+                    </div>
+                </div>
             </div>
             <div class="col-lg-2 col-md-6">
                 <label for="frequency" class="form-label">訪問頻度</label>
@@ -56,27 +66,11 @@
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-lg-3 col-md-12">
-                <label for="show_expired" class="form-label">期限切れ契約</label>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="show_expired" name="show_expired" value="1" 
-                           <?= isset($_GET['show_expired']) && $_GET['show_expired'] ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="show_expired">
-                        期限切れ契約も表示
-                    </label>
-                </div>
-            </div>
-            <div class="col-lg-2 col-md-6">
-                <label class="form-label">&nbsp;</label>
-                <button type="submit" class="btn btn-outline-primary d-block w-100">
-                    <i class="fas fa-search"></i> 検索
-                </button>
-            </div>
             <div class="col-lg-1 col-md-6">
                 <label class="form-label">&nbsp;</label>
-                <a href="<?= base_url('contracts') ?>" class="btn btn-outline-secondary d-block w-100">
-                    <i class="fas fa-redo"></i>
-                </a>
+                <button type="submit" class="btn btn-outline-primary d-block w-100">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
         </form>
     </div>
@@ -126,7 +120,13 @@
                     <!-- 既存のGETパラメータを維持 -->
                     <?php foreach ($_GET as $key => $value): ?>
                         <?php if (!in_array($key, ['page', 'per_page'])): ?>
-                            <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>">
+                            <?php if (is_array($value)): ?>
+                                <?php foreach ($value as $v): ?>
+                                    <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>[]" value="<?= htmlspecialchars($v, ENT_QUOTES, 'UTF-8') ?>">
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <input type="hidden" name="<?= htmlspecialchars($key, ENT_QUOTES, 'UTF-8') ?>" value="<?= htmlspecialchars($value, ENT_QUOTES, 'UTF-8') ?>">
+                            <?php endif; ?>
                         <?php endif; ?>
                     <?php endforeach; ?>
                     
@@ -231,6 +231,7 @@
                             $isVisitMonth = is_visit_month($contract, date('Y'), date('n'));
                             $taxiAllowed = $contract['taxi_allowed'] ?? 0;
                             $isContractExpired = $contract['is_contract_expired'] ?? false;
+                            $isFutureContract = $contract['is_future_contract'] ?? false;
                             
                             // 週間スケジュールの取得
                             $weeklySchedule = '';
@@ -246,7 +247,7 @@
                                 }
                             }
                             ?>
-                            <tr class="<?= $isContractExpired ? 'table-secondary expired-contract' : '' ?>">
+                            <tr class="<?= ($isContractExpired || $isFutureContract) ? 'table-secondary expired-contract' : '' ?>">
                                 <td>
                                     <i class="fas fa-map-marker-alt me-1 text-primary"></i>
                                     <strong><?= htmlspecialchars($contract['branch_name'] ?? '不明', ENT_QUOTES, 'UTF-8') ?></strong>
@@ -261,7 +262,7 @@
                                     <strong><?= htmlspecialchars($contract['doctor_name'] ?? '不明', ENT_QUOTES, 'UTF-8') ?></strong>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-primary fs-6 <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                    <span class="badge bg-primary fs-6 <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                         <?php if ($visitFrequency === 'spot'): ?>
                                             -
                                         <?php else: ?>
@@ -279,7 +280,7 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-<?= $visitFrequencyInfo['class'] ?> <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                    <span class="badge bg-<?= $visitFrequencyInfo['class'] ?> <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                         <i class="<?= $visitFrequencyInfo['icon'] ?> me-1"></i>
                                         <?= $visitFrequencyInfo['label'] ?>
                                     </span>
@@ -327,7 +328,15 @@
                                     <?php endif; ?>
                                 </td>
                                 <td class="text-center">
-                                    <?php if ($isContractExpired): ?>
+                                    <?php if ($isFutureContract): ?>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-hourglass-start me-1"></i>
+                                            開始前
+                                        </span>
+                                        <div class="small text-muted mt-1">
+                                            契約開始前
+                                        </div>
+                                    <?php elseif ($isContractExpired): ?>
                                         <span class="badge bg-dark">
                                             <i class="fas fa-calendar-times me-1"></i>
                                             期間終了
@@ -355,7 +364,7 @@
                                 </td>
                                 <td class="text-center">
                                     <?php if ($taxiAllowed): ?>
-                                        <span class="badge bg-success <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                        <span class="badge bg-success <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                             <i class="fas fa-taxi me-1"></i>
                                             可
                                         </span>
@@ -363,7 +372,7 @@
                                             利用可能
                                         </div>
                                     <?php else: ?>
-                                        <span class="badge bg-danger <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                        <span class="badge bg-danger <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                             <i class="fas fa-ban me-1"></i>
                                             不可
                                         </span>
@@ -383,14 +392,14 @@
                                     </small>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge bg-<?= get_status_class($contract['contract_status']) ?> <?= $isContractExpired ? 'opacity-50' : '' ?>">
-                                        <?= get_status_label($contract['contract_status']) ?>
-                                    </span>
-                                    <?php if ($isContractExpired): ?>
-                                        <div class="small text-danger mt-1">
-                                            <i class="fas fa-exclamation-triangle me-1"></i>
-                                            期限切れ
-                                        </div>
+                                    <?php if ($isFutureContract): ?>
+                                        <span class="badge bg-secondary">開始前</span>
+                                    <?php elseif ($isContractExpired): ?>
+                                        <span class="badge bg-secondary">期間終了</span>
+                                    <?php else: ?>
+                                        <span class="badge bg-<?= get_status_class($contract['contract_status']) ?> <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
+                                            <?= get_status_label($contract['contract_status']) ?>
+                                        </span>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -409,6 +418,7 @@
                     $isVisitMonth = is_visit_month($contract, date('Y'), date('n'));
                     $taxiAllowed = $contract['taxi_allowed'] ?? 0;
                     $isContractExpired = $contract['is_contract_expired'] ?? false;
+                    $isFutureContract = $contract['is_future_contract'] ?? false;
                     
                     // 週間スケジュールの取得
                     $weeklySchedule = '';
@@ -424,26 +434,29 @@
                         }
                     }
                     ?>
-                    <div class="card mb-3 contract-card <?= $isContractExpired ? 'expired-contract-card' : '' ?>">
+                    <div class="card mb-3 contract-card <?= $isContractExpired || $isFutureContract ? 'expired-contract-card' : '' ?>">
                         <div class="card-header d-flex justify-content-between align-items-center">
                             <div class="contract-title">
-                                <i class="fas fa-file-contract me-2 text-primary <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                <i class="fas fa-file-contract me-2 text-primary <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                 <strong class="<?= $isContractExpired ? 'text-muted' : '' ?>">
                                     <?= htmlspecialchars($contract['branch_name'] ?? '不明', ENT_QUOTES, 'UTF-8') ?>
                                 </strong>
-                                <?php if ($isContractExpired): ?>
-                                    <span class="badge bg-dark ms-2">期限切れ</span>
-                                <?php endif; ?>
                             </div>
-                            <span class="badge bg-<?= get_status_class($contract['contract_status']) ?> <?= $isContractExpired ? 'opacity-50' : '' ?>">
-                                <?= get_status_label($contract['contract_status']) ?>
-                            </span>
+                            <?php if ($isContractExpired): ?>
+                                <span class="badge bg-secondary">期間終了</span>
+                            <?php elseif ($isFutureContract): ?>
+                                <span class="badge bg-secondary">開始前</span>
+                            <?php else: ?>
+                                <span class="badge bg-<?= get_status_class($contract['contract_status']) ?> <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
+                                    <?= get_status_label($contract['contract_status']) ?>
+                                </span>
+                            <?php endif; ?>
                         </div>
                         <div class="card-body">
                             <!-- 拠点情報 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-map-marker-alt text-primary <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-map-marker-alt text-primary <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     拠点
                                 </div>
                                 <div class="item-value">
@@ -461,7 +474,7 @@
                             <!-- 産業医情報 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-user-md text-info <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-user-md text-info <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     産業医
                                 </div>
                                 <div class="item-value">
@@ -474,11 +487,11 @@
                             <!-- 訪問時間 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-clock text-success <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-clock text-success <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     訪問時間
                                 </div>
                                 <div class="item-value">
-                                    <span class="badge bg-primary fs-6 <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                    <span class="badge bg-primary fs-6 <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                         <?php if ($visitFrequency === 'spot'): ?>
                                             -
                                         <?php else: ?>
@@ -494,11 +507,11 @@
                             <!-- 訪問頻度 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-calendar text-warning <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-calendar text-warning <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     頻度
                                 </div>
                                 <div class="item-value">
-                                    <span class="badge bg-<?= $visitFrequencyInfo['class'] ?> <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                    <span class="badge bg-<?= $visitFrequencyInfo['class'] ?> <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                         <i class="<?= $visitFrequencyInfo['icon'] ?> me-1"></i>
                                         <?= $visitFrequencyInfo['label'] ?>
                                     </span>
@@ -552,11 +565,20 @@
                             <!-- 今月の状況 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-calendar-check text-info <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-calendar-check text-info <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     今月
                                 </div>
                                 <div class="item-value">
-                                    <?php if ($isContractExpired): ?>
+                                    <?php if ($isFutureContract): ?>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-hourglass-start me-1"></i>
+                                            開始前
+                                        </span>
+                                        <div class="small text-info mt-1">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            契約開始前
+                                        </div>
+                                    <?php elseif ($isContractExpired): ?>
                                         <span class="badge bg-dark">
                                             <i class="fas fa-calendar-times me-1"></i>
                                             期間終了
@@ -588,12 +610,12 @@
                             <!-- タクシー利用 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-taxi text-warning <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-taxi text-warning <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     タクシー
                                 </div>
                                 <div class="item-value">
                                     <?php if ($taxiAllowed): ?>
-                                        <span class="badge bg-success <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                        <span class="badge bg-success <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                             <i class="fas fa-taxi me-1"></i>
                                             可
                                         </span>
@@ -601,7 +623,7 @@
                                             利用可能
                                         </div>
                                     <?php else: ?>
-                                        <span class="badge bg-danger <?= $isContractExpired ? 'opacity-50' : '' ?>">
+                                        <span class="badge bg-danger <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>">
                                             <i class="fas fa-ban me-1"></i>
                                             不可
                                         </span>
@@ -615,7 +637,7 @@
                             <!-- 契約期間 -->
                             <div class="contract-item">
                                 <div class="item-label">
-                                    <i class="fas fa-calendar-alt text-secondary <?= $isContractExpired ? 'opacity-50' : '' ?>"></i>
+                                    <i class="fas fa-calendar-alt text-secondary <?= ($isContractExpired || $isFutureContract) ? 'opacity-50' : '' ?>"></i>
                                     期間
                                 </div>
                                 <div class="item-value">
@@ -1377,45 +1399,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // モバイル画面での検索ボタンの配置調整
-    function adjustSearchButtons() {
-        const searchForm = document.querySelector('.card-body .row.g-3');
-        const submitButton = searchForm.querySelector('button[type="submit"]').parentElement;
-        const resetButton = searchForm.querySelector('a[href*="contracts"]').parentElement;
-        
-        if (window.innerWidth <= 1024) {
-            // ボタンを横並びにするためのコンテナを作成
-            if (!document.querySelector('.search-buttons')) {
-                const buttonContainer = document.createElement('div');
-                buttonContainer.className = 'col-12 search-buttons';
-                buttonContainer.innerHTML = `
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-outline-primary flex-fill">
-                            <i class="fas fa-search"></i> 検索
-                        </button>
-                        <a href="<?= base_url('contracts') ?>" class="btn btn-outline-secondary flex-fill">
-                            <i class="fas fa-redo"></i> リセット
-                        </a>
-                    </div>
-                `;
-                
-                // 既存のボタンを非表示にして新しいコンテナを追加
-                submitButton.style.display = 'none';
-                resetButton.style.display = 'none';
-                searchForm.appendChild(buttonContainer);
-            }
-        }
-    }
-    
-    // 初期調整とリサイズ時の調整
-    adjustSearchButtons();
-    window.addEventListener('resize', adjustSearchButtons);
-    
-    // 期限切れ契約チェックボックスの説明ツールチップ
-    const expiredCheckbox = document.getElementById('show_expired');
-    if (expiredCheckbox) {
-        expiredCheckbox.setAttribute('title', '契約終了日が先月以前の契約も一覧に表示します');
-        new bootstrap.Tooltip(expiredCheckbox);
-    }
     
     // 表示件数変更時の自動送信
     const perPageSelect = document.getElementById('per_page');

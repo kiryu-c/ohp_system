@@ -18,14 +18,24 @@
                        value="<?= htmlspecialchars($_GET['search'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
                        placeholder="企業名/拠点名で検索">
             </div>
-            <div class="col-md-2">
-                <label for="status" class="form-label">ステータス</label>
-                <select class="form-select" id="status" name="status">
-                    <option value="">全て</option>
-                    <option value="active" <?= ($_GET['status'] ?? '') === 'active' ? 'selected' : '' ?>>有効</option>
-                    <option value="inactive" <?= ($_GET['status'] ?? '') === 'inactive' ? 'selected' : '' ?>>無効</option>
-                    <option value="terminated" <?= ($_GET['status'] ?? '') === 'terminated' ? 'selected' : '' ?>>終了</option>
-                </select>
+            <div class="col-md-3">
+                <label class="form-label">ステータス</label>
+                <?php
+                // デフォルト値の設定: GETパラメータがない場合は['active']
+                $statusArray = isset($_GET['status']) ? (array)$_GET['status'] : ['active'];
+                ?>
+                <div class="d-flex gap-3 mt-2">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="active" id="status_active"
+                               <?= in_array('active', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_active">有効</label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" name="status[]" value="expired" id="status_expired"
+                               <?= in_array('expired', $statusArray) ? 'checked' : '' ?>>
+                        <label class="form-check-label" for="status_expired">期間終了</label>
+                    </div>
+                </div>
             </div>
             <div class="col-md-2">
                 <label for="frequency" class="form-label">訪問頻度</label>
@@ -41,8 +51,8 @@
                 <label for="tax_type" class="form-label">税種別</label>
                 <select class="form-select" id="tax_type" name="tax_type">
                     <option value="">全て</option>
-                    <option value="taxable" <?= ($_GET['tax_type'] ?? '') === 'exclusive' ? 'selected' : '' ?>>外税</option>
-                    <option value="tax_free" <?= ($_GET['tax_type'] ?? '') === 'inclusive' ? 'selected' : '' ?>>内税</option>
+                    <option value="exclusive" <?= ($_GET['tax_type'] ?? '') === 'exclusive' ? 'selected' : '' ?>>外税</option>
+                    <option value="inclusive" <?= ($_GET['tax_type'] ?? '') === 'inclusive' ? 'selected' : '' ?>>内税</option>
                 </select>
             </div>
             <div class="col-md-2">
@@ -54,27 +64,12 @@
                     <?php endfor; ?>
                 </select>
             </div>
-            <div class="col-md-2">
-                <label for="show_expired" class="form-label">期限切れ契約</label>
-                <div class="form-check mt-2">
-                    <input class="form-check-input" type="checkbox" id="show_expired" name="show_expired" value="1" 
-                           <?= isset($_GET['show_expired']) && $_GET['show_expired'] ? 'checked' : '' ?>>
-                    <label class="form-check-label" for="show_expired">
-                        期限切れ契約も表示
-                    </label>
-                </div>
-            </div>
             
-            <div class="col-md-6">
+            <div class="col-md-1">
                 <label class="form-label">&nbsp;</label>
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-outline-primary">
-                        <i class="fas fa-search me-1"></i>検索
-                    </button>
-                    <a href="<?= base_url('contracts') ?>" class="btn btn-outline-secondary">
-                        <i class="fas fa-redo me-1"></i>リセット
-                    </a>
-                </div>
+                <button type="submit" class="btn btn-outline-primary d-block w-100">
+                    <i class="fas fa-search"></i>
+                </button>
             </div>
         </form>
     </div>
@@ -128,8 +123,8 @@
             </div>
             <div class="col-md-6">
                 <div class="d-flex justify-content-end align-items-center gap-2 flex-wrap">
-                    <?php if (isset($_GET['show_expired']) && $_GET['show_expired']): ?>
-                        <span class="badge bg-warning">期限切れ含む</span>
+                    <?php if (isset($_GET['status']) && in_array('expired', (array)$_GET['status'])): ?>
+                        <span class="badge bg-warning">期間終了含む</span>
                     <?php endif; ?>
                     
                     <!-- ページサイズ選択（ダッシュボード統一） -->
@@ -456,7 +451,7 @@
                                         <?php endif; ?>
                                     </td>
                                     <td class="text-center">
-                                        <?php if ($frequency === 'spot'): ?>
+                                        <?php if ($isContractValid && $frequency === 'spot'): ?>
                                             <span class="text-muted">-</span>
                                         <?php elseif ($isContractExpired): ?>
                                             <div class="text-center">
@@ -2632,7 +2627,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // フィルター変更時にページを1に戻す
-    const filterElements = document.querySelectorAll('#status, #frequency, #tax_type, #year, #show_expired');
+    const filterElements = document.querySelectorAll('#frequency, #tax_type, #year, input[name="status[]"]');
     filterElements.forEach(element => {
         element.addEventListener('change', function() {
             const form = document.getElementById('filterForm');
@@ -2664,15 +2659,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 this.style.transform = 'scale(1)';
             });
         });
-    }
-    
-    // 期限切れ契約チェックボックスの説明ツールチップ
-    const expiredCheckbox = document.getElementById('show_expired');
-    if (expiredCheckbox) {
-        expiredCheckbox.setAttribute('title', '契約終了日が今月1日より前の契約も一覧に表示します');
-        if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-            new bootstrap.Tooltip(expiredCheckbox);
-        }
     }
     
     // エラーハンドリング

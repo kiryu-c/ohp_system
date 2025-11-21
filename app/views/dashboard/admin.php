@@ -310,7 +310,7 @@
                         <i class="fas fa-info-circle me-1"></i>
                         <strong>タクシー利用について:</strong>
                         <span class="badge bg-success me-1">許可</span>契約でタクシー利用が認められている拠点
-                        <span class="badge bg-secondary me-1">不可</span>契約でタクシー利用が認められていない拠点
+                        <span class="badge bg-danger me-1">不可</span>契約でタクシー利用が認められていない拠点
                         <br>
                         <i class="fas fa-exclamation-triangle text-warning me-1"></i>
                         タクシー利用が許可されていない契約での申請は慎重に承認してください
@@ -330,42 +330,6 @@
                 <h5 class="mb-0"><i class="fas fa-tools me-2"></i>管理メニュー</h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3 mb-3">
-                        <div class="d-grid">
-                            <a href="<?= base_url('users') ?>" class="btn btn-outline-primary btn-lg">
-                                <i class="fas fa-users fa-2x mb-2 d-block"></i>
-                                ユーザー管理
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="d-grid">
-                            <a href="<?= base_url('companies') ?>" class="btn btn-outline-success btn-lg">
-                                <i class="fas fa-building fa-2x mb-2 d-block"></i>
-                                企業管理
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="d-grid">
-                            <a href="<?= base_url('contracts') ?>" class="btn btn-outline-info btn-lg">
-                                <i class="fas fa-file-contract fa-2x mb-2 d-block"></i>
-                                契約管理
-                            </a>
-                        </div>
-                    </div>
-                    <div class="col-md-3 mb-3">
-                        <div class="d-grid">
-                            <a href="<?= base_url('service_records/admin') ?>" class="btn btn-outline-warning btn-lg">
-                                <i class="fas fa-clipboard-list fa-2x mb-2 d-block"></i>
-                                役務記録管理
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 追加管理機能 -->
                 <div class="row mt-3">
                     <div class="col-md-3 mb-3">
                         <div class="d-grid">
@@ -679,74 +643,6 @@
                     <?php endif; ?>
                     
                 <?php endif; ?>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- システム情報・業務種別分析セクション -->
-<div class="row">
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>システム情報</h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-12">
-                        <p><strong>システム:</strong> 産業医役務管理システム</p>
-                        <p><strong>バージョン:</strong> 0.0.0 </p>
-                        <p><strong>最終更新:</strong> 2025-10-29</p>
-                        <p><strong>ログインユーザー:</strong> <?= htmlspecialchars($_SESSION['user_name'] ?? 'Unknown', ENT_QUOTES, 'UTF-8') ?></p>
-                        <p><strong>ユーザータイプ:</strong> 管理者</p>
-                        <p><strong>セッション開始:</strong> <?= date('Y-m-d H:i:s') ?></p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <div class="col-md-6 mb-4">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>業務種別分析</h5>
-            </div>
-            <div class="card-body">
-                <div class="row text-center">
-                    <div class="col-6">
-                        <div class="p-2">
-                            <h4 class="text-success">
-                                <?= (isset($stats['regular_count']) ? $stats['regular_count'] : 0) + 
-                                    (isset($stats['emergency_count']) ? $stats['emergency_count'] : 0) + 
-                                    (isset($stats['extension_count']) ? $stats['extension_count'] : 0) ?>
-                            </h4>
-                            <small class="text-muted">時間記録業務</small>
-                            <div class="small text-success">
-                                <?= isset($stats['total_month_hours']) ? format_total_hours($stats['total_month_hours']) : '0時間' ?>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6">
-                        <div class="p-2">
-                            <h4 class="text-primary">
-                                <?= (isset($stats['document_count']) ? $stats['document_count'] : 0) + 
-                                    (isset($stats['remote_consultation_count']) ? $stats['remote_consultation_count'] : 0) + 
-                                    (isset($stats['other_count']) ? $stats['other_count'] : 0) ?>
-                            </h4>
-                            <small class="text-muted">非時間記録業務</small>
-                            <div class="small text-primary">
-                                書面・遠隔・その他の合計
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="small text-muted mt-2">
-                    <p class="mb-1"><strong>機能概要:</strong></p>
-                    <ul class="mb-0 ps-3">
-                        <li>時間記録業務: 開始・終了時刻を記録</li>
-                        <li>非時間記録業務: 件数のみ記録</li>
-                    </ul>
-                </div>
             </div>
         </div>
     </div>

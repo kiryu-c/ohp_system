@@ -463,7 +463,7 @@ CREATE TABLE `contracts` (
   `taxi_allowed` tinyint(1) NOT NULL DEFAULT 0 COMMENT 'タクシー利用可否（0:不可、1:可）',
   `start_date` date NOT NULL,
   `end_date` date DEFAULT NULL,
-  `contract_status` enum('active','inactive','terminated') DEFAULT 'active',
+  `contract_status` enum('active','inactive') DEFAULT 'active',
   `tax_type` enum('exclusive','inclusive') DEFAULT 'exclusive' COMMENT '税種別(exclusive:外税, inclusive:内税)',
   `contract_file_path` varchar(255) DEFAULT NULL,
   `contract_file_name` varchar(255) DEFAULT NULL,

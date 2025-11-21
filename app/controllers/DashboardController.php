@@ -639,8 +639,7 @@ class DashboardController extends BaseController {
                                     WHERE co.company_id = :company_id 
                                     AND sr.status = 'pending'
                                     AND co.branch_id IN ($branchInClause)
-                                    AND co.contract_status = 'active'
-                                    AND (co.end_date IS NULL OR co.end_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))";
+                                    AND co.contract_status = 'active'";
             
             $stmt = $db->prepare($pendingRecordsCountSql);
             $stmt->execute(['company_id' => $companyId]);
@@ -659,7 +658,6 @@ class DashboardController extends BaseController {
                         AND sr.status = 'pending'
                         AND co.branch_id IN ($branchInClause)
                         AND co.contract_status = 'active'
-                        AND (co.end_date IS NULL OR co.end_date >= DATE_FORMAT(CURDATE(), '%Y-%m-01'))
                         ORDER BY b.name ASC, u.name ASC, sr.service_date DESC, sr.start_time DESC
                         LIMIT :limit OFFSET :offset";
             
@@ -830,7 +828,8 @@ class DashboardController extends BaseController {
                                 LEFT JOIN users u ON sr.doctor_id = u.id
                                 LEFT JOIN contracts co ON sr.contract_id = co.id
                                 LEFT JOIN branches b ON co.branch_id = b.id
-                                LEFT JOIN companies c ON co.company_id = c.id";
+                                LEFT JOIN companies c ON co.company_id = c.id
+                                WHERE sr.service_date >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)";
         
         $stmt = $db->prepare($recentServicesCountSql);
         $stmt->execute();
@@ -855,6 +854,7 @@ class DashboardController extends BaseController {
                             LEFT JOIN branches b ON co.branch_id = b.id
                             LEFT JOIN companies c ON co.company_id = c.id
                             LEFT JOIN travel_expenses te ON sr.id = te.service_record_id
+                            WHERE sr.service_date >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH)
                             ORDER BY sr.service_date DESC, sr.created_at DESC
                             LIMIT :limit OFFSET :offset";
         
@@ -863,56 +863,6 @@ class DashboardController extends BaseController {
         $stmt->bindValue(':offset', $recentServicesPaginationParams['offset'], PDO::PARAM_INT);
         $stmt->execute();
         $recentServices = $stmt->fetchAll();
-
-        // 今月の全体統計(役務種別ごと)
-        $currentMonth = date('n');
-        $currentYear = date('Y');
-        
-        $monthlyStatsSql = "SELECT 
-                            SUM(CASE WHEN service_type = 'regular' OR service_type IS NULL THEN service_hours ELSE 0 END) as regular_hours,
-                            SUM(CASE WHEN service_type = 'emergency' THEN service_hours ELSE 0 END) as emergency_hours,
-                            SUM(CASE WHEN service_type = 'extension' THEN service_hours ELSE 0 END) as extension_hours,
-                            COUNT(CASE WHEN service_type = 'regular' OR service_type IS NULL THEN 1 END) as regular_count,
-                            COUNT(CASE WHEN service_type = 'emergency' THEN 1 END) as emergency_count,
-                            COUNT(CASE WHEN service_type = 'extension' THEN 1 END) as extension_count,
-                            COUNT(CASE WHEN service_type = 'document' THEN 1 END) as document_count,
-                            COUNT(CASE WHEN service_type = 'remote_consultation' THEN 1 END) as remote_consultation_count,
-                            COUNT(CASE WHEN service_type = 'other' THEN 1 END) as other_count,
-                            SUM(service_hours) as total_month_hours,
-                            COUNT(*) as total_month_records
-                        FROM service_records 
-                        WHERE YEAR(service_date) = :year 
-                        AND MONTH(service_date) = :month";
-        
-        $stmt = $db->prepare($monthlyStatsSql);
-        $stmt->execute([
-            'year' => $currentYear,
-            'month' => $currentMonth
-        ]);
-        $monthlyStats = $stmt->fetch() ?: [
-            'regular_hours' => 0,
-            'emergency_hours' => 0,
-            'extension_hours' => 0,
-            'regular_count' => 0,
-            'emergency_count' => 0,
-            'extension_count' => 0,
-            'document_count' => 0,
-            'remote_consultation_count' => 0,
-            'other_count' => 0,
-            'total_month_hours' => 0,
-            'total_month_records' => 0
-        ];
-
-        // 基本統計情報
-        $stats = [
-            'total_doctors' => count($userModel->findDoctors()),
-            'total_companies' => count($companyModel->findActive()),
-            'total_contracts' => count($contractModel->findActive()),
-            'pending_services' => count($serviceModel->findAll(['status' => 'pending']))
-        ];
-        
-        // 統計情報をマージ
-        $stats = array_merge($stats, $monthlyStats);
 
         // ページネーション情報を計算
         $pendingTravelExpensesPaginationInfo = $this->calculatePagination(
@@ -933,7 +883,6 @@ class DashboardController extends BaseController {
         }
         
         $data = [
-            'stats' => $stats,
             'recentServices' => $recentServices,
             'pendingTravelExpenses' => $pendingTravelExpenses,
             'pendingTravelExpensesPaginationInfo' => $pendingTravelExpensesPaginationInfo,
