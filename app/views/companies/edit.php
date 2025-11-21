@@ -98,6 +98,7 @@
                             <thead>
                                 <tr>
                                     <th>拠点名</th>
+                                    <th>勘定科目番号</th>
                                     <th>契約数</th>
                                     <th>状態</th>
                                     <th>操作</th>
@@ -107,6 +108,7 @@
                                 <?php foreach ($branches as $branch): ?>
                                     <tr>
                                         <td><?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?></td>
+                                        <td><?= htmlspecialchars($branch['account_code'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                                         <td>
                                             <?php
                                             // 契約数を取得
@@ -121,7 +123,7 @@
                                         </td>
                                         <td>
                                             <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                    onclick="editBranch(<?= $branch['id'] ?>, '<?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['address'] ?? '', ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>', <?= $branch['is_active'] ?>)">
+                                                    onclick="editBranch(<?= $branch['id'] ?>, '<?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['account_code'] ?? '', ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['address'] ?? '', ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['phone'] ?? '', ENT_QUOTES, 'UTF-8') ?>', '<?= htmlspecialchars($branch['email'] ?? '', ENT_QUOTES, 'UTF-8') ?>', <?= $branch['is_active'] ?>)">
                                                 <i class="fas fa-edit"></i>
                                             </button>
                                         </td>
@@ -154,6 +156,13 @@
                             拠点名 <span class="text-danger">*</span>
                         </label>
                         <input type="text" class="form-control" id="new_branch_name" name="name" required>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="new_branch_account_code" class="form-label">
+                            勘定科目番号 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="new_branch_account_code" name="account_code" required maxlength="16" placeholder="例：1234567890123456">
                     </div>
                     
                     <div class="mb-3">
@@ -203,6 +212,13 @@
                     </div>
                     
                     <div class="mb-3">
+                        <label for="edit_branch_account_code" class="form-label">
+                            勘定科目番号 <span class="text-danger">*</span>
+                        </label>
+                        <input type="text" class="form-control" id="edit_branch_account_code" name="account_code" required maxlength="16" placeholder="例：1234567890123456">
+                    </div>
+                    
+                    <div class="mb-3">
                         <label for="edit_branch_address" class="form-label">住所</label>
                         <textarea class="form-control" id="edit_branch_address" name="address" rows="2"></textarea>
                     </div>
@@ -239,9 +255,10 @@
 </div>
 
 <script>
-function editBranch(id, name, address, phone, email, isActive) {
+function editBranch(id, name, accountCode, address, phone, email, isActive) {
     document.getElementById('editBranchForm').action = '<?= base_url('branches/') ?>' + id;
     document.getElementById('edit_branch_name').value = name;
+    document.getElementById('edit_branch_account_code').value = accountCode;
     document.getElementById('edit_branch_address').value = address;
     document.getElementById('edit_branch_phone').value = phone;
     document.getElementById('edit_branch_email').value = email;

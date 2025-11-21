@@ -45,7 +45,13 @@ class CompanyController extends BaseController {
         
         // データ取得用のSQL
         $sql = "SELECT b.*, c.name as company_name, c.is_active as company_is_active,
-                (SELECT COUNT(*) FROM contracts WHERE branch_id = b.id AND contract_status = 'active') as contract_count,
+                (SELECT COUNT(*) 
+                 FROM contracts 
+                 WHERE branch_id = b.id 
+                 AND contract_status = 'active'
+                 AND effective_date <= CURDATE()
+                 AND (effective_end_date IS NULL OR effective_end_date >= CURDATE())
+                ) as contract_count,
                 (SELECT COUNT(*) FROM users WHERE company_id = b.company_id AND is_active = true) as user_count
                 FROM branches b
                 JOIN companies c ON b.company_id = c.id
@@ -105,12 +111,20 @@ class CompanyController extends BaseController {
         // ページネーション情報を計算
         $totalPages = ceil($totalCount / $perPage);
         
-        // 統計情報を計算（全体データから）
+        // 統計情報を計算(全体データから)
         $statsSql = "SELECT 
                         COUNT(DISTINCT c.id) as total_companies,
                         COUNT(DISTINCT b.id) as total_branches,
                         COUNT(DISTINCT CASE WHEN b.is_active = 1 THEN b.id END) as active_branches,
-                        COALESCE(SUM(CASE WHEN ct.contract_status = 'active' THEN 1 ELSE 0 END), 0) as total_contracts
+                        COALESCE(SUM(
+                            CASE 
+                                WHEN ct.contract_status = 'active' 
+                                AND ct.effective_date <= CURDATE()
+                                AND (ct.effective_end_date IS NULL OR ct.effective_end_date >= CURDATE())
+                                THEN 1 
+                                ELSE 0 
+                            END
+                        ), 0) as total_contracts
                     FROM companies c
                     LEFT JOIN branches b ON c.id = b.company_id
                     LEFT JOIN contracts ct ON b.id = ct.branch_id
@@ -162,6 +176,7 @@ class CompanyController extends BaseController {
         
         $name = sanitize($_POST['name'] ?? '');
         $branchName = sanitize($_POST['branch_name'] ?? '');
+        $accountCode = sanitize($_POST['account_code'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $phone = sanitize($_POST['phone'] ?? '');
         $email = sanitize($_POST['email'] ?? '');
@@ -175,6 +190,12 @@ class CompanyController extends BaseController {
         
         if (empty($branchName)) {
             $errors[] = '拠点名を入力してください。';
+        }
+        
+        if (empty($accountCode)) {
+            $errors[] = '勘定科目番号を入力してください。';
+        } elseif (strlen($accountCode) > 16) {
+            $errors[] = '勘定科目番号は16桁以内で入力してください。';
         }
         
         if (!empty($errors)) {
@@ -210,6 +231,7 @@ class CompanyController extends BaseController {
             $branchData = [
                 'company_id' => $companyId,
                 'name' => $branchName,
+                'account_code' => $accountCode,
                 'address' => $address,
                 'phone' => $phone,
                 'email' => $email
@@ -248,13 +270,21 @@ class CompanyController extends BaseController {
         $branchModel = new Branch();
         $branches = $branchModel->findByCompany($id);
         
-        // 各拠点の契約数を取得
-        require_once __DIR__ . '/../models/Contract.php';
-        $contractModel = new Contract();
+        // 各拠点の有効契約数を取得
+        $db = Database::getInstance()->getConnection();
         
         foreach ($branches as &$branch) {
-            $contracts = $contractModel->findByBranch($branch['id']);
-            $branch['contract_count'] = count($contracts);
+            $sql = "SELECT COUNT(*) as count 
+                    FROM contracts 
+                    WHERE branch_id = :branch_id 
+                    AND contract_status = 'active'
+                    AND effective_date <= CURDATE()
+                    AND (effective_end_date IS NULL OR effective_end_date >= CURDATE())";
+            
+            $stmt = $db->prepare($sql);
+            $stmt->execute(['branch_id' => $branch['id']]);
+            $result = $stmt->fetch();
+            $branch['contract_count'] = (int)$result['count'];
         }
         unset($branch); // 参照を解除（重要！）
         

@@ -236,8 +236,13 @@ function buildCompaniesUrl($page) {
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <i class="fas fa-map-marker-alt text-muted me-1"></i>
-                                    <?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    <div>
+                                        <i class="fas fa-map-marker-alt text-muted me-1"></i>
+                                        <?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
+                                    <div class="small text-muted" style="opacity: 0.6;">
+                                        <?= htmlspecialchars($branch['account_code'] ?? '', ENT_QUOTES, 'UTF-8') ?>
+                                    </div>
                                 </td>
                                 <td>
                                     <?php if (!empty($branch['address'])): ?>
@@ -317,6 +322,9 @@ function buildCompaniesUrl($page) {
                                     <p class="card-subtitle mb-0">
                                         <i class="fas fa-map-marker-alt me-2 text-muted"></i>
                                         <?= htmlspecialchars($branch['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </p>
+                                    <p class="mb-0 small text-muted" style="opacity: 0.6; padding-left: 1.5rem;">
+                                        <?= htmlspecialchars($branch['account_code'] ?? '', ENT_QUOTES, 'UTF-8') ?>
                                     </p>
                                 </div>
                                 

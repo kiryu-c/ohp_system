@@ -47,6 +47,19 @@
                     
                     <div class="row">
                         <div class="col-md-12 mb-3">
+                            <label for="account_code" class="form-label">
+                                勘定科目番号 <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="account_code" name="account_code" 
+                                   value="<?= htmlspecialchars($_POST['account_code'] ?? '', ENT_QUOTES, 'UTF-8') ?>" 
+                                   required maxlength="16"
+                                   placeholder="例：1234567890123456">
+                            <div class="form-text">この拠点の勘定科目番号を入力してください（16桁まで）</div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
                             <label for="address" class="form-label">住所</label>
                             <textarea class="form-control" id="address" name="address" rows="3" 
                                       placeholder="例：東京都港区1-1-1 サンプルビル10F"><?= htmlspecialchars($_POST['address'] ?? '', ENT_QUOTES, 'UTF-8') ?></textarea>
@@ -110,6 +123,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const form = document.querySelector('form');
     const nameInput = document.getElementById('name');
     const branchNameInput = document.getElementById('branch_name');
+    const accountCodeInput = document.getElementById('account_code');
     const emailInput = document.getElementById('email');
     
     form.addEventListener('submit', function(e) {
@@ -129,6 +143,17 @@ document.addEventListener('DOMContentLoaded', function() {
             isValid = false;
         } else {
             clearFieldError(branchNameInput);
+        }
+        
+        // 勘定科目番号の検証
+        if (accountCodeInput.value.trim() === '') {
+            showFieldError(accountCodeInput, '勘定科目番号を入力してください');
+            isValid = false;
+        } else if (accountCodeInput.value.length > 16) {
+            showFieldError(accountCodeInput, '勘定科目番号は16桁以内で入力してください');
+            isValid = false;
+        } else {
+            clearFieldError(accountCodeInput);
         }
         
         // メールアドレスの検証（入力されている場合のみ）

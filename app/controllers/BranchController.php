@@ -67,6 +67,7 @@ class BranchController extends BaseController {
         
         $companyId = (int)($_POST['company_id'] ?? 0);
         $name = sanitize($_POST['name'] ?? '');
+        $accountCode = sanitize($_POST['account_code'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $phone = sanitize($_POST['phone'] ?? '');
         $email = sanitize($_POST['email'] ?? '');
@@ -76,6 +77,12 @@ class BranchController extends BaseController {
         
         if (empty($name)) {
             $errors[] = '拠点名を入力してください。';
+        }
+        
+        if (empty($accountCode)) {
+            $errors[] = '勘定科目番号を入力してください。';
+        } elseif (strlen($accountCode) > 16) {
+            $errors[] = '勘定科目番号は16桁以内で入力してください。';
         }
         
         if (!empty($errors)) {
@@ -89,6 +96,7 @@ class BranchController extends BaseController {
         $data = [
             'company_id' => $companyId,
             'name' => $name,
+            'account_code' => $accountCode,
             'address' => $address,
             'phone' => $phone,
             'email' => $email
@@ -139,6 +147,7 @@ class BranchController extends BaseController {
         }
         
         $name = sanitize($_POST['name'] ?? '');
+        $accountCode = sanitize($_POST['account_code'] ?? '');
         $address = sanitize($_POST['address'] ?? '');
         $phone = sanitize($_POST['phone'] ?? '');
         $email = sanitize($_POST['email'] ?? '');
@@ -150,8 +159,17 @@ class BranchController extends BaseController {
             redirect("branches/{$id}/edit");
         }
         
+        if (empty($accountCode)) {
+            $this->setFlash('error', '勘定科目番号を入力してください。');
+            redirect("branches/{$id}/edit");
+        } elseif (strlen($accountCode) > 16) {
+            $this->setFlash('error', '勘定科目番号は16桁以内で入力してください。');
+            redirect("branches/{$id}/edit");
+        }
+        
         $data = [
             'name' => $name,
+            'account_code' => $accountCode,
             'address' => $address,
             'phone' => $phone,
             'email' => $email,
